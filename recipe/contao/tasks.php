@@ -2,10 +2,16 @@
 
 namespace Deployer;
 
+use Deployer\Exception\ConfigurationException;
+
 desc('Upload project files');
 task('deploy:project_files', function () {
+    $exclude = get('exclude', []);
     foreach (get('project_files') as $src)
     {
+        if (in_array($src, $exclude)) {
+            continue;
+        }
         upload($src, '{{release_path}}/', ['options' => ['--recursive', '--relative']]);
     }
 });
@@ -39,4 +45,13 @@ task('contao:migrate', function () {
     run('{{bin/console}} contao:migrate --no-backup {{console_options}}');
 });
 
-after('deploy:failed', 'deploy:unlock');
+desc('Copy .htaccess files');
+task('deploy:htaccess', function () {
+    try {
+        if ($htaccess = get('htaccess_filename', false)) {
+            cd('{{release_path}}/{{public_path}}');
+            run("if [ -f \"./$htaccess\" ]; then mv ./$htaccess ./.htaccess; fi");
+            run("rm -f $htaccess");
+        }
+    } catch (ConfigurationException $e) {}
+});

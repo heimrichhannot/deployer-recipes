@@ -20,3 +20,5 @@ task('deploy:prepare', [
     'deploy:themes',
     'deploy:writable',
 ]);
+
+after('deploy:failed', 'deploy:unlock');
