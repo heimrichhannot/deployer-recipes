@@ -2,61 +2,13 @@
 
 namespace Deployer;
 
-import('recipe/contao.php');
-
-set('project_files', [
-    'config/config.yaml',
-    'contao',
-    'files/themes',
-    'src',
-    'templates',
-    'composer.json',
-    'composer.lock',
-]);
-
-set('composer_options', '--no-dev');
-set('create_db_backup', true);
-
-desc('Prepares a new release');
-task('deploy:prepare', [
-    'deploy:info',
-    'deploy:setup',
-    'deploy:lock',
-    'deploy:release',
-    'deploy:update_code',
-    'deploy:assets:release',
-    'deploy:shared',
-    'deploy:writable',
-]);
-
 desc('Upload project files');
-task('deploy:update_code', function () {
-    foreach(get('project_files') as $src) {
+task('deploy:project_files', function () {
+    foreach (get('project_files') as $src)
+    {
         upload($src, '{{release_path}}/', ['options' => ['--recursive', '--relative']]);
     }
 });
-
-(function () {
-    $sharedDirs = get('shared_dirs');
-    unset($sharedDirs[array_search('system/config', $sharedDirs)]);
-    set('shared_dirs', $sharedDirs);
-})();
-
-add('shared_dirs', [
-    'assets/images',
-    'contao-manager',
-    'files',
-    'isotope',
-    '{{public_path}}/share',
-    'var/backups',
-    'var/logs',
-]);
-
-add('shared_files', [
-    'public/.htaccess',
-    'system/config/localconfig.php',
-    '.env',
-]);
 
 desc('Upload encore assets files');
 task('deploy:assets:release', function () {
@@ -78,7 +30,6 @@ desc('Upload theme files');
 task('deploy:themes', function () {
     upload('files/themes/', '{{deploy_path}}/shared/', ['options' => ['--recursive', '--relative']]);
 });
-after('deploy:shared', 'deploy:themes');
 
 desc('Run Contao migrations');
 task('contao:migrate', function () {
@@ -87,7 +38,5 @@ task('contao:migrate', function () {
     }
     run('{{bin/console}} contao:migrate --no-backup {{console_options}}');
 });
-
-set('keep_releases', 10);
 
 after('deploy:failed', 'deploy:unlock');
