@@ -1,0 +1,23 @@
+{
+    "name": "heimrichhannot/deployer-recipes",
+    "type": "library",
+    "description": "A Heimrich & Hannot Contao project",
+    "homepage": "https://github.com/heimrichhannot/deployer-recipes",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Heimrich & Hannot GmbH",
+            "email": "digitales@heimrich-hannot.de",
+            "homepage": "https://www.heimrich-hannot.de"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "deployer/deployer": "^7.3"
+    },
+    "autoload": {
+        "files": ["autoload.php"]
+    }
+}
