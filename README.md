@@ -14,9 +14,9 @@ and customize the following content according to your needs.
 ```php
 <?php # deploy.php
 
-date_default_timezone_set('Europe/Berlin');
-
 namespace Deployer;
+
+date_default_timezone_set('Europe/Berlin');
 
 import(__DIR__ . '/vendor/heimrichhannot/deployer-recipes/recipe/contao.php');
 
@@ -49,7 +49,7 @@ host('www.example.org')
 /** Optional: Add yarn build task */
 // before('deploy', 'ddev:yarn:prod');
 
-/** Optional: Deploy an htaccess file to production (will be renamed to .htaccess) */
+/** Optional: Deploy an htaccess file which will be renamed to .htaccess */
 // set('htaccess_filename', '.htaccess.prod');
 // after('deploy:shared', 'deploy:htaccess');
 ```
