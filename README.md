@@ -3,8 +3,14 @@ Deployer recipes used at [Heimrich & Hannot GmbH](https://www.heimrich-hannot.de
 
 ## Install
 
+To use our recipes, require this package with composer.
 ```shell
 composer require --dev heimrichhannot/deployer-recipes
+```
+
+If you haven't already installed [Deployer](https://deployer.org/), do so with the following command.
+```shell
+composer require --dev deployer/deployer
 ```
 
 ## Usage with Contao 4.13+

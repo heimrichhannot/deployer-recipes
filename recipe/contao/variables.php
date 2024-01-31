@@ -5,8 +5,10 @@ namespace Deployer;
 set('create_db_backup', true);
 set('keep_releases', 10);
 
+$yamlExt = get('yaml_ext', '.yml');
+
 set('project_files', [
-    'config/config.yaml',
+    'config/config' . $yamlExt,
     'contao',
     'files/themes',
     'src',
@@ -15,11 +17,7 @@ set('project_files', [
     'composer.lock',
 ]);
 
-(function () {
-    $sharedDirs = get('shared_dirs');
-    unset($sharedDirs[array_search('system/config', $sharedDirs)]);
-    set('shared_dirs', $sharedDirs);
-})();
+yank('shared_dirs', 'system/config');
 
 add('shared_dirs', [
     'assets/images',
@@ -31,7 +29,10 @@ add('shared_dirs', [
     'var/logs',
 ]);
 
+yank('shared_files', 'config/parameters.yml');
+
 add('shared_files', [
+    'config/parameters' . $yamlExt,
     'public/.htaccess',
     'system/config/localconfig.php',
     '.env',
