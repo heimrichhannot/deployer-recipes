@@ -33,7 +33,7 @@ remove('shared_files', 'config/parameters.yml');
 
 add('shared_files', [
     'config/parameters{{yaml_ext}}',
-    'public/.htaccess',
+    '{{public_path}}/.htaccess',
     'system/config/localconfig.php',
     '.env',
 ]);
