@@ -5,7 +5,7 @@ namespace Deployer;
 set('create_db_backup', true);
 set('keep_releases', 10);
 
-set('yaml_ext', get('yaml_ext', '.yml'));
+set('yaml_ext', get('yaml_ext', '.yaml'));
 
 set('project_files', [
     'config/config{{yaml_ext}}',
