@@ -61,7 +61,7 @@ host('www.example.org')
 // ]);
 
 /** Optional: Add yarn build task */
-// before('deploy', 'ddev:yarn:prod');
+// before('deploy', 'ddev:yp');
 
 /** Optional: Deploy an htaccess file which will be renamed to .htaccess */
 // set('htaccess_filename', '.htaccess.prod');
