@@ -58,3 +58,12 @@ task('deploy:htaccess', function () {
         }
     } catch (ConfigurationException $e) {}
 });
+
+desc('Downloads the files from remote.');
+task('files:retrieve', static function () {
+    if (!askConfirmation('Download remote files without deletes?')) {
+        return;
+    }
+    download("{{release_or_current_path}}/files/", 'files/');
+    info('Download of files/ directory completed');
+});
