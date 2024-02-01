@@ -54,7 +54,7 @@ task('deploy:htaccess', function () {
         if ($htaccess = get('htaccess_filename', false)) {
             cd('{{release_path}}/{{public_path}}');
             run("if [ -f \"./$htaccess\" ]; then mv ./$htaccess ./.htaccess; fi");
-            run("rm -f $htaccess");
+            run("rm -f $htaccess .htaccess.* .htaccess_*");
         }
     } catch (ConfigurationException $e) {}
 });
