@@ -3,8 +3,6 @@
 namespace Deployer;
 
 import('recipe/contao.php');
-// todo: check if this is still needed
-import(__DIR__. '/../extension/base.php');
 import(__DIR__ . '/contao/variables.php');
 import(__DIR__ . '/contao/composer.php');
 import(__DIR__ . '/contao/ddev.php');

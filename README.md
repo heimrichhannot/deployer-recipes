@@ -24,7 +24,8 @@ namespace Deployer;
 
 date_default_timezone_set('Europe/Berlin');
 
-import(__DIR__ . '/vendor/heimrichhannot/deployer-recipes/recipe/contao.php');
+import(__DIR__ . '/vendor/heimrichhannot/deployer-recipes/autoload.php');
+recipe('contao');
 
 set('rsync_src', __DIR__);
 
@@ -46,6 +47,13 @@ host('www.example.org')
 //     'config/routes.yaml',
 //     'translations',
 // ]);
+
+/** Optional: Remove values from a variable */
+// remove('project_files', [
+//    'files/themes',
+//    'templates'
+// ]);
+// remove('project_files', 'templates');
 
 /** Optional: Add project-specific files to exclude from deploy */
 // add('exclude', [

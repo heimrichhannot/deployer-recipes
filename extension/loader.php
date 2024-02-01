@@ -1,5 +1,5 @@
 <?php
 
-const __HUH_DEPLOYER_EXTENSION__ = __DIR__;
+namespace Deployer;
 
-require_once __DIR__ . '/functions.php';
+import(__DIR__ . '/functions.php');

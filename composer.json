@@ -1,7 +1,7 @@
 {
     "name": "heimrichhannot/deployer-recipes",
-    "type": "library",
     "description": "A Heimrich & Hannot Contao project",
+    "type": "library",
     "homepage": "https://github.com/heimrichhannot/deployer-recipes",
     "license": "proprietary",
     "authors": [
@@ -12,12 +12,12 @@
         }
     ],
     "require": {
-        "php": ">=7.4"
-    },
-    "require-dev": {
+        "php": ">=7.4",
         "deployer/deployer": "^7.3"
     },
     "autoload": {
-        "files": ["autoload.php"]
+        "files": [
+            "autoload.php"
+        ]
     }
 }
