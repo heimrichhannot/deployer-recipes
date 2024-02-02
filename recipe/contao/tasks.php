@@ -50,13 +50,20 @@ task('contao:migrate', function () {
 
 desc('Copy .htaccess files');
 task('deploy:htaccess', function () {
-    try {
-        if ($htaccess = get('htaccess_filename', false)) {
-            cd('{{release_path}}/{{public_path}}');
-            run("if [ -f \"./$htaccess\" ]; then mv ./$htaccess ./.htaccess; fi");
-            run("rm -f $htaccess .htaccess.* .htaccess_*");
-        }
-    } catch (ConfigurationException $e) {}
+    $htaccess = get('htaccess_filename');
+    $htpasswd = get('htpasswd_filename');
+    if ($htaccess && $htaccess !== '.htaccess')
+    {
+        cd('{{release_path}}/{{public_path}}');
+        run("if [ -f \"./$htaccess\" ]; then mv ./$htaccess ./.htaccess; fi");
+        run("rm -f $htaccess .htaccess.* .htaccess_*");
+    }
+    if ($htpasswd && $htpasswd !== '.htpasswd')
+    {
+        cd('{{release_path}}/{{public_path}}');
+        run("if [ -f \"./$htpasswd\" ]; then mv ./$htpasswd ./.htpasswd; fi");
+        run("rm -f $htpasswd .htpasswd.* .htpasswd_*");
+    }
 });
 
 desc('Downloads the files from remote.');

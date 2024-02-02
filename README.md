@@ -60,6 +60,11 @@ host('www.example.org')
 //     '.githooks',
 // ]);
 
+/** Optional: Add a shared .htpasswd or any other file */
+/// add('shared_files', [
+//     '{{public_path}}/.htpasswd'
+// ]);
+
 /** Optional: Add yarn build task */
 // before('deploy', 'ddev:yp');
 
