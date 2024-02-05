@@ -38,7 +38,7 @@ host('www.example.org')
     ->set('bin/php', 'php82')
     ->set('bin/composer', '{{bin/php}} {{deploy_path}}/composer.phar')
     ->set('release_name', fn() => date('y-m-d_H-i-s'))
-    /** In case no ACL is available, use chmod instead */
+    /** In case ACL is unavailable, use chmod instead */
     // ->set('writable_mode', 'chmod')
 ;
 
@@ -53,7 +53,6 @@ host('www.example.org')
 //    'files/themes',
 //    'templates'
 // ]);
-// remove('project_files', 'templates');
 
 /** Optional: Add project-specific files to exclude from deploy */
 // add('exclude', [
@@ -68,7 +67,16 @@ host('www.example.org')
 /** Optional: Add yarn build task */
 // before('deploy', 'ddev:yp');
 
-/** Optional: Deploy an htaccess file which will be renamed to .htaccess */
-// set('htaccess_filename', '.htaccess.prod');
-// after('deploy:shared', 'deploy:htaccess');
+/** Optional: Ask confirmation before going live */
+// before('deploy', 'ask_confirm_prod');
+```
+
+### Work in Progress
+
+These templates are still work in progress and not yet fully implemented. Use with caution or not at all. 
+
+```php
+/** WIP: Deploy an htaccess file which will be renamed to .htaccess */
+set('htaccess_filename', '.htaccess.prod');
+after('deploy:shared', 'deploy:htaccess');
 ```
