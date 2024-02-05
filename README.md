@@ -60,7 +60,7 @@ host('www.example.org')
 // ]);
 
 /** Optional: Add a shared .htpasswd or any other file */
-/// add('shared_files', [
+// add('shared_files', [
 //     '{{public_path}}/.htpasswd'
 // ]);
 
