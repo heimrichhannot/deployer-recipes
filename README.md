@@ -64,6 +64,9 @@ host('www.example.org')
 //     '{{public_path}}/.htpasswd'
 // ]);
 
+/** Optional: Ask confirmation before running migrations */
+// set('ask_confirm_migrate', true);
+
 /** Optional: Add yarn build task */
 // before('deploy', 'ddev:yp');
 

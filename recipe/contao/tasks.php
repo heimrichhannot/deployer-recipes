@@ -39,7 +39,9 @@ task('deploy:themes', function () {
 
 desc('Run Contao migrations');
 task('contao:migrate', function () {
-    if (!askConfirmation('Run database migrations now?', false)) {
+    if (get('ask_confirm_migrate') === true
+        && !askConfirmation('Run database migrations now?', true))
+    {
         return;
     }
     if (get('create_db_backup') === true) {
