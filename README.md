@@ -31,7 +31,7 @@ set('rsync_src', __DIR__);
 
 host('www.example.org')
     ->setPort(22)
-    ->set('remote_user', 'www_data')
+    ->setRemoteUser('www_data')
     ->set('http_user', 'www_data')
     ->set('public_dir', 'public')
     ->set('deploy_path', '/usr/www/users/{{remote_user}}/docroot')
@@ -73,6 +73,41 @@ host('www.example.org')
 /** Optional: Ask confirmation before going live */
 // before('deploy', 'ask_confirm_prod');
 ```
+
+## Setup multiple hosts or environments
+
+You can setup multiple hosts or environments by using the `host()` function multiple times.
+If you do not specify **[selectors](https://deployer.org/docs/7.x/selector)** when running your deployer commands, you will be asked to choose which hosts to run that command for.
+
+If you want to set common variables for all hosts, you can loop to set them for each host.
+
+> Make sure to use labels to differentiate between environments.
+
+```php
+$hosts = [
+    host('stage')
+        ->set('deploy_path', '/usr/www/users/{{remote_user}}/stage')
+        ->setLabels(['env' => 'stage']),
+    host('production')
+        ->set('deploy_path', '/usr/www/users/{{remote_user}}/live')
+        ->setLabels(['env' => 'prod'])
+];
+
+foreach ($hosts as $host) {
+    $host
+        ->setHostname('www.example.org')
+        ->setPort(22)
+        ->setRemoteUser('www_data')
+        ->set('http_user', 'www_data')
+        ->set('public_dir', 'public')
+        ->set('bin/php', 'php82')
+        ->set('bin/composer', '{{bin/php}} {{deploy_path}}/composer.phar')
+        ->set('release_name', fn() => date('y-m-d_H-i-s'))
+    ;
+}
+```
+
+> _Note: This documentation might change in the future as there might be a better way to achieve this. Keep yourself posted._
 
 ### Work in Progress
 
