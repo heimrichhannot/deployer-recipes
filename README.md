@@ -8,7 +8,7 @@ To use our recipes, require this package with composer.
 composer require --dev heimrichhannot/deployer-recipes
 ```
 
-If you haven't already installed [Deployer](https://deployer.org/), do so with the following command.
+It is _not_ required to install [Deployer](https://deployer.org/) separately, but you may do so with the following command.
 ```shell
 composer require --dev deployer/deployer
 ```
