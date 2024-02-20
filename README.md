@@ -72,7 +72,7 @@ host('www.example.org')
 /** @example Ask confirmation before going live */
 // before('deploy', 'ask_confirm_prod');
 
-/** @example Deploy `files/themes`, which are shared and hence not updated by default. */
+/** @example Deploy `files/themes`, which are shared and not updated by default */
 // after('deploy:shared', 'deploy:themes');
 ```
 
