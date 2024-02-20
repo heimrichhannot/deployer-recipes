@@ -41,36 +41,39 @@ host('www.example.org')
     // ->set('writable_mode', 'chmod')
 ;
 
-/** Optional: Add project-specific files */
+/** @example Add project-specific files */
 // add('project_files', [
 //     'config/routes.yaml',
 //     'translations',
 // ]);
 
-/** Optional: Remove values from a variable */
+/** @example Remove values from a variable */
 // remove('project_files', [
 //    'files/themes',
 //    'templates'
 // ]);
 
-/** Optional: Add project-specific files to exclude from deploy */
+/** @example Add project-specific files to exclude from deploy */
 // add('exclude', [
 //     '.githooks',
 // ]);
 
-/** Optional: Add a shared .htpasswd or any other file */
+/** @example Add a shared .htpasswd or any other file */
 // add('shared_files', [
 //     '{{public_path}}/.htpasswd'
 // ]);
 
-/** Optional: Ask confirmation before running migrations */
+/** @example Ask confirmation before running migrations */
 // set('ask_confirm_migrate', true);
 
-/** Optional: Add yarn build task */
+/** @example Add yarn build task */
 // before('deploy', 'ddev:yp');
 
-/** Optional: Ask confirmation before going live */
+/** @example Ask confirmation before going live */
 // before('deploy', 'ask_confirm_prod');
+
+/** @example Deploy `files/themes`, which are shared and hence not updated by default. */
+// after('deploy:shared', 'deploy:themes');
 ```
 
 ## Setup multiple hosts or environments

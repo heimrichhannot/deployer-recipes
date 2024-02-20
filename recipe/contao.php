@@ -17,7 +17,6 @@ task('deploy:prepare', [
     'deploy:project_files',
     'deploy:assets:release',
     'deploy:shared',
-    'deploy:themes',
     'deploy:writable',
 ]);
 
