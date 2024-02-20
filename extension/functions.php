@@ -50,7 +50,7 @@ function getHosts()
 }
 
 /**
- * Returns method chain factory to run the given methods with their specified arguments on all hosts.
+ * Returns a method chain factory to run the given methods with their specified arguments on all hosts.
  */
 function onAllHosts(): object
 {
