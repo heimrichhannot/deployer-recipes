@@ -3,6 +3,8 @@
 namespace Deployer;
 
 use Deployer\Exception\Exception;
+use Deployer\Host\Host;
+use Deployer\Host\HostCollection;
 
 /**
  * @param string $recipe
@@ -35,4 +37,30 @@ function remove(string $variableName, $needle): void
         unset($var[array_search($n, $var)]);
     }
     set($variableName, $var);
+}
+
+/**
+ * Shorthand for {@see Deployer::$hosts Deployer::get()->hosts}.
+ *
+ * @return Host[]|HostCollection
+ */
+function getHosts()
+{
+    return Deployer::get()->hosts;
+}
+
+/**
+ * Returns method chain factory to run the given methods with their specified arguments on all hosts.
+ */
+function onAllHosts(): object
+{
+    return new class() {
+        public function __call($name, $arguments): self
+        {
+            foreach (getHosts() as $host) {
+                $host->$name(...$arguments);
+            }
+            return $this;
+        }
+    };
 }

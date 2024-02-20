@@ -78,21 +78,35 @@ host('www.example.org')
 You can setup multiple hosts or environments by using the `host()` function multiple times.
 If you do not specify **[selectors](https://deployer.org/docs/7.x/selector)** when running your deployer commands, you will be asked to choose which hosts to run that command for.
 
-If you want to set common variables for all hosts, you can loop to set them for each host.
+If you want to set common variables for all hosts, use the provided method chain factory method _(sic!)_, to call any number of methods on all previously defined hosts.
 
 > Make sure to use labels to differentiate between environments.
 
 ```php
-$hosts = [
-    host('stage')
-        ->set('deploy_path', '/usr/www/users/{{remote_user}}/stage')
-        ->setLabels(['env' => 'stage']),
-    host('production')
-        ->set('deploy_path', '/usr/www/users/{{remote_user}}/live')
-        ->setLabels(['env' => 'prod'])
-];
+host('stage')
+    ->set('deploy_path', '/usr/www/users/{{remote_user}}/stage')
+    ->setLabels(['env' => 'stage']);
 
-foreach ($hosts as $host) {
+host('production')
+    ->set('deploy_path', '/usr/www/users/{{remote_user}}/live')
+    ->setLabels(['env' => 'prod']);
+
+// use the method chain factory
+onAllHosts()
+    ->setHostname('www.example.org')
+    ->setPort(22)
+    ->setRemoteUser('www_data')
+    ->set('http_user', 'www_data')
+    ->set('public_dir', 'public')
+    ->set('bin/php', 'php82')
+    ->set('release_name', fn() => date('y-m-d_H-i-s'))
+;
+```
+
+Alternatively, you can loop through all hosts.
+
+```php
+foreach (getHosts() as $host) {
     $host
         ->setHostname('www.example.org')
         ->setPort(22)
@@ -104,6 +118,8 @@ foreach ($hosts as $host) {
     ;
 }
 ```
+
+`getHosts()` is a shorthand for `Deployer::get()->hosts`.
 
 > _Note: This documentation might change in the future as there might be a better way to achieve this. Keep yourself posted._
 
