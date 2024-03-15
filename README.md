@@ -66,6 +66,9 @@ host('www.example.org')
 /** @example Ask confirmation before running migrations */
 // set('ask_confirm_migrate', true);
 
+/** @example Do not create backup on migration */
+// set('create_db_backup', false);
+
 /** @example Add yarn build task */
 // before('deploy', 'ddev:yp');
 
