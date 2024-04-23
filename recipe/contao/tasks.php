@@ -76,3 +76,8 @@ task('files:retrieve', static function () {
     download("{{release_or_current_path}}/files/", 'files/');
     info('Download of files/ directory completed');
 });
+
+desc('Clear cache on remote server');
+task('cache:clear', function () {
+    writeln(run('{{bin/console}} cache:clear {{console_options}}'));
+});
