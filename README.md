@@ -129,7 +129,15 @@ foreach (getHosts() as $host) {
 
 > _Note: This documentation might change in the future as there might be a better way to achieve this. Keep yourself posted._
 
-### Work in Progress
+## Utility Commands
+
+### Clear the cache on the remote server
+
+```bash
+ddev dep deploy cache:clear
+```
+
+## Work in Progress
 
 These templates are still work in progress and not yet fully implemented. Use with caution or not at all. 
 
