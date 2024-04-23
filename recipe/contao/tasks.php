@@ -23,13 +23,26 @@ task('deploy:assets:release', function () {
 
 desc('Update encore assets files');
 task('deploy:assets', function () {
-    $tmpDir = '{{deploy_path}}/tmp/'.uniqid('deploy_assets_', true);
-    run('mkdir -p '.$tmpDir);
-    upload('{{public_dir}}/build/', $tmpDir, ['options' => ['--recursive', '--relative']]);
-    run('[ -d {{deploy_path}}/current/public/build_old ] && rm -rf {{deploy_path}}/current/public/build_old');
-    run('[ -d {{deploy_path}}/current/public/build ] && mv -f {{deploy_path}}/current/public/build {{deploy_path}}/current/public/build_old');
-    run("mv $tmpDir/public/build {{deploy_path}}/current/public/build");
-    run('rm -rf '.$tmpDir);
+
+    $path = '{{current_path}}/{{public_dir}}';
+    if (!test('[ -d '.$path.'/build ]')) {
+        throw new \Exception(parse('The path '.$path.'/build directory does not exist'));
+    }
+
+    info('Updating encore assets files');
+
+    if (test('[ -d '.$path.'/build_new ]')) {
+        run('rm -rf '.$path.'/build_new');
+    }
+
+    upload('{{public_dir}}/build/', $path.'/build_new', ['options' => ['--recursive']]);
+
+    if (test('[ -d '.$path.'/build_old ]')) {
+        run('rm -rf '.$path.'/build_old');
+    }
+
+    run('mv '.$path.'/build '.$path.'/build_old');
+    run('mv '.$path.'/build_new '.$path.'/build');
 });
 
 desc('Upload theme files');
