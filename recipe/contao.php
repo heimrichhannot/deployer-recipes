@@ -20,4 +20,5 @@ task('deploy:prepare', [
     'deploy:writable',
 ]);
 
+after('deploy:publish', 'cache:optcache:clear');
 after('deploy:failed', 'deploy:unlock');

@@ -2,7 +2,7 @@
 
 namespace Deployer;
 
-use Deployer\Exception\ConfigurationException;
+use Symfony\Component\Console\Output\OutputInterface;
 
 desc('Upload project files');
 task('deploy:project_files', function () {
@@ -93,4 +93,33 @@ task('files:retrieve', static function () {
 desc('Clear cache on remote server');
 task('cache:clear', function () {
     writeln(run('{{bin/console}} cache:clear {{console_options}}'));
+});
+
+desc('Clear opt cache on remote server');
+task('cache:optcache:clear', function () {
+    if (!has('public_url')) {
+        warning('No public_url defined. Skipping opcache clear.');
+        return;
+    }
+
+    writeln('Create tmp cache clear file', OutputInterface::VERBOSITY_VERBOSE);
+    $tmpFileName = uniqid('optcache-clear-') . '.php';
+    $tmpFilePath = parse('{{current_path}}/{{public_dir}}') . '/' . $tmpFileName;
+    run('echo "<?php if (function_exists(\'opcache_reset\')) {echo opcache_reset();} else {echo \'2\';}" > '.$tmpFilePath);
+
+    writeln('Execute cache clear file', OutputInterface::VERBOSITY_VERBOSE);
+    $result = fetch('{{public_url}}/'.$tmpFileName, info: $info);
+    if ($info['http_code'] !== 200) {
+        throw new \Exception('Failed to clear opcache. HTTP code: '.$info['http_code']);
+    }
+
+    writeln('Remove tmp cache clear file', OutputInterface::VERBOSITY_VERBOSE);
+    run('rm '.$tmpFilePath);
+
+    if (1 !== (int)$result) {
+        warning('Opcache is not available on the server.');
+        return;
+    }
+
+    info('Opcache cleared!');
 });
