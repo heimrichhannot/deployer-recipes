@@ -96,28 +96,34 @@ task('cache:clear', function () {
 });
 
 desc('Clear opt cache on remote server');
-task('cache:optcache:clear', function () {
+task('cache:opcache:clear', function () {
     if (!has('public_url')) {
         warning('No public_url defined. Skipping opcache clear.');
         return;
     }
 
     writeln('Create tmp cache clear file', OutputInterface::VERBOSITY_VERBOSE);
+
+    $path = parse('{{deploy_path}}/current/{{public_dir}}');
     $tmpFileName = uniqid('optcache-clear-') . '.php';
-    $tmpFilePath = parse('{{current_path}}/{{public_dir}}') . '/' . $tmpFileName;
-    run('echo "<?php if (function_exists(\'opcache_reset\')) {echo opcache_reset();} else {echo \'2\';}" > '.$tmpFilePath);
+
+    run("cd $path && echo \"<?php if (function_exists('opcache_reset')) {echo opcache_reset();} else {echo '2';}\" > $tmpFileName");
+    writeln('Dumped file to '.$path.'/'.$tmpFileName, OutputInterface::VERBOSITY_VERBOSE);
 
     writeln('Execute cache clear file', OutputInterface::VERBOSITY_VERBOSE);
-    $result = fetch('{{public_url}}/'.$tmpFileName, info: $info);
-    if ($info['http_code'] !== 200) {
-        throw new \Exception('Failed to clear opcache. HTTP code: '.$info['http_code']);
-    }
+    $url = rtrim(parse('{{public_url}}'), '/').'/'.$tmpFileName;
+    $result = run("cd $path && curl -sL $url");
 
     writeln('Remove tmp cache clear file', OutputInterface::VERBOSITY_VERBOSE);
-    run('rm '.$tmpFilePath);
+    run("cd $path && rm $tmpFileName");
+
+    if (2 === (int)$result) {
+        warning('Opcache is not available on the server.');
+        return;
+    }
 
     if (1 !== (int)$result) {
-        warning('Opcache is not available on the server.');
+        warning('Failed to clear opcache.');
         return;
     }
 
