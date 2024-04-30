@@ -112,7 +112,7 @@ task('cache:opcache:clear', function () {
 
     writeln('Execute cache clear file', OutputInterface::VERBOSITY_VERBOSE);
     $url = rtrim(parse('{{public_url}}'), '/').'/'.$tmpFileName;
-    $result = run("cd $path && curl -sL $url");
+    $result = run("cd $path && curl -kL -A \"deployer/clear_opt_cache\" $url");
 
     writeln('Remove tmp cache clear file', OutputInterface::VERBOSITY_VERBOSE);
     run("cd $path && rm $tmpFileName");
