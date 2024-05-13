@@ -111,7 +111,7 @@ onAllHosts()
 ;
 ```
 
-Alternatively, you may loop through all hosts.
+Alternatively, you may iterate over all hosts:
 
 ```php
 foreach (getHosts() as $host) {
