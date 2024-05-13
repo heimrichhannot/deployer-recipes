@@ -3,6 +3,7 @@
 namespace Deployer;
 
 use Deployer\Exception\ConfigurationException;
+use Symfony\Component\Console\Output\OutputInterface;
 
 desc('Upload project files');
 task('deploy:project_files', function () {
@@ -23,13 +24,25 @@ task('deploy:assets:release', function () {
 
 desc('Update encore assets files');
 task('deploy:assets', function () {
-    $tmpDir = '{{deploy_path}}/tmp/'.uniqid('deploy_assets_', true);
-    run('mkdir -p '.$tmpDir);
-    upload('{{public_dir}}/build/', $tmpDir, ['options' => ['--recursive', '--relative']]);
-    run('[ -d {{deploy_path}}/current/public/build_old ] && rm -rf {{deploy_path}}/current/public/build_old');
-    run('[ -d {{deploy_path}}/current/public/build ] && mv -f {{deploy_path}}/current/public/build {{deploy_path}}/current/public/build_old');
-    run("mv $tmpDir/public/build {{deploy_path}}/current/public/build");
-    run('rm -rf '.$tmpDir);
+    $path = '{{current_path}}/{{public_dir}}';
+    if (!test('[ -d '.$path.'/build ]')) {
+        throw new \Exception(parse('The path '.$path.'/build directory does not exist'));
+    }
+
+    info('Updating encore assets files');
+
+    if (test('[ -d '.$path.'/build_new ]')) {
+        run('rm -rf '.$path.'/build_new');
+    }
+
+    upload('{{public_dir}}/build/', $path.'/build_new', ['options' => ['--recursive']]);
+
+    if (test('[ -d '.$path.'/build_old ]')) {
+        run('rm -rf '.$path.'/build_old');
+    }
+
+    run('mv '.$path.'/build '.$path.'/build_old');
+    run('mv '.$path.'/build_new '.$path.'/build');
 });
 
 desc('Upload theme files');
@@ -75,6 +88,46 @@ task('files:retrieve', static function () {
     }
     download("{{release_or_current_path}}/files/", 'files/');
     info('Download of files/ directory completed');
+});
+
+desc('Clear cache on remote server');
+task('cache:clear', function () {
+    writeln(run('{{bin/console}} cache:clear {{console_options}}'));
+});
+
+desc('Clear opt cache on remote server');
+task('cache:opcache:clear', function () {
+    if (!has('public_url')) {
+        warning('No public_url defined. Skipping opcache clear.');
+        return;
+    }
+
+    writeln('Create tmp cache clear file', OutputInterface::VERBOSITY_VERBOSE);
+
+    $path = parse('{{deploy_path}}/current/{{public_dir}}');
+    $tmpFileName = uniqid('optcache-clear-') . '.php';
+
+    run("cd $path && echo \"<?php if (function_exists('opcache_reset')) {echo opcache_reset();} else {echo '2';}\" > $tmpFileName");
+    writeln('Dumped file to '.$path.'/'.$tmpFileName, OutputInterface::VERBOSITY_VERBOSE);
+
+    writeln('Execute cache clear file', OutputInterface::VERBOSITY_VERBOSE);
+    $url = rtrim(parse('{{public_url}}'), '/').'/'.$tmpFileName;
+    $result = run("cd $path && curl -kL -A \"deployer/clear_opt_cache\" $url");
+
+    writeln('Remove tmp cache clear file', OutputInterface::VERBOSITY_VERBOSE);
+    run("cd $path && rm $tmpFileName");
+
+    if (2 === (int)$result) {
+        warning('Opcache is not available on the server.');
+        return;
+    }
+
+    if (1 !== (int)$result) {
+        warning('Failed to clear opcache.');
+        return;
+    }
+
+    info('Opcache cleared!');
 });
 
 desc('Clone database from remote.');

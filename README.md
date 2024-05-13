@@ -32,6 +32,7 @@ set('rsync_src', __DIR__);
 host('www.example.org')
     ->setPort(22)
     ->setRemoteUser('www_data')
+    ->set('public_url', 'https://www.example.org')
     ->set('http_user', 'www_data')
     ->set('public_dir', 'public')
     ->set('deploy_path', '/usr/www/users/{{remote_user}}/docroot')
@@ -129,7 +130,27 @@ foreach (getHosts() as $host) {
 
 > _Note: This documentation might change in the future as there might be a better way to achieve this. Keep yourself posted._
 
-### Work in Progress
+## Utility Commands
+
+### Clear the cache on the remote server
+
+```bash
+ddev dep deploy cache:clear
+```
+
+### Clear opcache
+
+```bash
+ddev dep deploy opcache:clear
+```
+
+### Upload assets (encore build folder)
+
+```bash
+ddev dep deploy deploy:assets
+```
+
+## Work in Progress
 
 These templates are still work in progress and not yet fully implemented. Use with caution or not at all. 
 
