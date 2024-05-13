@@ -76,3 +76,51 @@ task('files:retrieve', static function () {
     download("{{release_or_current_path}}/files/", 'files/');
     info('Download of files/ directory completed');
 });
+
+desc('Clone database from remote.');
+task('db:clone', static function () {
+    if (askConfirmation('Create a new database backup on remote?', true))
+    {
+        // create a backup
+        info('Creating database backup on remote');
+        run('{{bin/console}} contao:backup:create {{console_options}}');
+    }
+    elseif (!askConfirmation('Use remote\'s latest existing database backup?', true))
+    {
+        info('Nothing to do. Bye!');
+        return;
+    }
+
+    // get list of backups
+    info('Fetching latest database backup');
+    $json = run('{{bin/console}} contao:backup:list --format=json {{console_options}}');
+
+    // get latest backup
+    $backups = \json_decode($json, true);
+    \usort($backups, static function ($a, $b) {
+        return \strtotime($a['createdAt']) <=> \strtotime($b['createdAt']);
+    });
+    $backup = end($backups) ?? null;
+    $filename = $backup['name'] ?? null;
+
+    if (!$filename) {
+        throw new \RuntimeException('No backup found');
+    }
+
+    set('db_dump_filename', $filename);
+
+    // download backup
+    info("Downloading database backup: $filename");
+    download("{{current_path}}/var/backups/$filename", 'var/backups/');
+    info('Database backup downloaded successfully');
+
+    if (!askConfirmation('Clone remote database to local?', true)) {
+        return;
+    }
+    $cmdDBRestore = get('local_cmd_db_restore');
+    if (!$cmdDBRestore) {
+        throw new ConfigurationException('local_cmd_db_restore is not set');
+    }
+    runLocally('{{local_cmd_db_restore}}');
+    info('Database cloned successfully');
+})->once();

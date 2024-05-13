@@ -13,6 +13,7 @@
     ],
     "require": {
         "php": ">=7.4",
+        "ext-json": "*",
         "deployer/deployer": "^7.3"
     },
     "autoload": {
