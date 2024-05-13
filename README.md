@@ -87,7 +87,8 @@ If you do not specify **[selectors](https://deployer.org/docs/7.x/selector)** wh
 
 If you want to set common variables for all hosts, use the provided method chain factory method _(sic!)_, to call any number of methods on all previously defined hosts.
 
-> Make sure to use labels to differentiate between environments.
+> [!IMPORTANT]
+> Make sure to use labels to differentiate between environments when using multiple hosts.
 
 ```php
 host('stage')
@@ -128,7 +129,8 @@ foreach (getHosts() as $host) {
 
 `getHosts()` is a shorthand for `Deployer::get()->hosts`.
 
-> _Note: This documentation might change in the future as there might be a better way to achieve this. Keep yourself posted._
+> [!NOTE]
+> This documentation might change in the future as there might be a better way to achieve this. Keep yourself posted.
 
 ## Utility Commands
 
