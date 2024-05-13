@@ -135,19 +135,33 @@ foreach (getHosts() as $host) {
 ### Clear the cache on the remote server
 
 ```bash
-ddev dep deploy cache:clear
+dep cache:clear
 ```
 
 ### Clear opcache
 
 ```bash
-ddev dep deploy opcache:clear
+dep opcache:clear
 ```
 
-### Upload assets (encore build folder)
+### Deploy assets only (encore build folder)
 
 ```bash
-ddev dep deploy deploy:assets
+dep deploy:assets
+```
+
+### Clone remote database to local
+
+```bash
+dep db:clone
+```
+
+You may override the default command to restore the database on your local database.
+
+```php
+# deploy.php
+// this is an example for restoring a database dump with mysql
+set('local_cmd_db_restore', 'mysql -u $dbUser -p $dbPass $dbName < var/backup/{{db_dump_filename}}');
 ```
 
 ## Work in Progress
