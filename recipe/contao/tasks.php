@@ -24,25 +24,32 @@ task('deploy:assets:release', function () {
 
 desc('Update encore assets files');
 task('deploy:assets', function () {
-    $path = '{{current_path}}/{{public_dir}}';
-    if (!test('[ -d '.$path.'/build ]')) {
-        throw new \Exception(parse('The path '.$path.'/build directory does not exist'));
+    $publicPath = '{{current_path}}/{{public_dir}}';
+    $buildPath = $publicPath . '/build';
+    $newBuildPath = $publicPath . '/build_new';
+    $oldBuildPath = $publicPath . '/build_old';
+
+    if (!test("[ -d $buildPath ]")) {
+        run("mkdir -p " . $buildPath);
+        if (!test("[ -d $buildPath ]")) {
+            throw new \Exception(parse("The path \"$buildPath\" does not exist and could not be created."));
+        }
     }
 
     info('Updating encore assets files');
 
-    if (test('[ -d '.$path.'/build_new ]')) {
-        run('rm -rf '.$path.'/build_new');
+    if (test("[ -d $newBuildPath ]")) {
+        run("rm -rf $newBuildPath");
     }
 
-    upload('{{public_dir}}/build/', $path.'/build_new', ['options' => ['--recursive']]);
+    upload('{{public_dir}}/build/', $newBuildPath, ['options' => ['--recursive']]);
 
-    if (test('[ -d '.$path.'/build_old ]')) {
-        run('rm -rf '.$path.'/build_old');
+    if (test("[ -d $oldBuildPath ]")) {
+        run('rm -rf ' . $oldBuildPath);
     }
 
-    run('mv '.$path.'/build '.$path.'/build_old');
-    run('mv '.$path.'/build_new '.$path.'/build');
+    run("mv $buildPath $oldBuildPath");
+    run("mv $newBuildPath $buildPath");
 });
 
 desc('Upload theme files');
