@@ -156,7 +156,7 @@ dep deploy:assets
 dep db:clone
 ```
 
-You may override the default command to restore the database on your local database.
+You may override the default ddev command to restore the dump file onto your local database, depending on your development environment's requirements:
 
 ```php
 # deploy.php
