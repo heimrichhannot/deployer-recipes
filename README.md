@@ -41,14 +41,15 @@ host('www.example.org')
     /** In case ACL is unavailable, use chmod instead */
     // ->set('writable_mode', 'chmod')
 ;
-
+```
+```php
 /** @example Add project-specific files */
 // add('project_files', [
 //     'config/routes.yaml',
 //     'translations',
 // ]);
 
-/** @example Remove values from a variable */
+/** @example Remove values from any variable */
 // remove('project_files', [
 //    'files/themes',
 //    'templates'
@@ -70,7 +71,7 @@ host('www.example.org')
 /** @example Do not create backup on migration */
 // set('create_db_backup', false);
 
-/** @example Add yarn build task */
+/** @example Add yarn build task before deploying */
 // before('deploy', 'ddev:yp');
 
 /** @example Ask confirmation before going live */
