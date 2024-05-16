@@ -181,6 +181,6 @@ task('db:clone', static function () {
     if (!$cmdDBRestore) {
         throw new ConfigurationException('local_cmd_db_restore is not set');
     }
-    runLocally('{{local_cmd_db_restore}}');
+    runLocally('{{local_cmd_db_restore}}', ['timeout' => null]);
     info('Database cloned successfully');
 })->once();
