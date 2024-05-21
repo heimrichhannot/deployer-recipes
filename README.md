@@ -179,7 +179,7 @@ You may override the locally executed commands depending on your development env
 // this is an example for restoring a database dump with mysql
 set('local_cmd_db_restore', "mysql -u $dbUser -p $dbPass $dbName < var/backup/{{db_dump_filename}}");
 set('local_cmd_db_dump', "mysqldump -u $dbUser -p $dbPass $dbName > var/backup/{{db_dump_filename}}");
-set('local_cmd_db_list', "my-command-that-lists-all-backups --format=json  # [{dateAdded: 'tstamp', name: 'filename'}, ...]");
+set('local_cmd_db_list', "my-command-that-lists-all-backups --format=json");  # [{dateAdded: tstamp, name: 'filename'}, ...]
 ```
 
 ## Work in Progress
