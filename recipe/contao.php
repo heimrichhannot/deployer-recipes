@@ -7,6 +7,7 @@ import(__DIR__ . '/contao/variables.php');
 import(__DIR__ . '/contao/composer.php');
 import(__DIR__ . '/contao/ddev.php');
 import(__DIR__ . '/contao/tasks.php');
+import(__DIR__ . '/contao/database.php');
 
 desc('Prepares a new release');
 task('deploy:prepare', [
