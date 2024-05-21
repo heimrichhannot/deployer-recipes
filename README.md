@@ -153,18 +153,33 @@ dep opcache:clear
 dep deploy:assets
 ```
 
-### Clone remote database to local
+### Database actions
+
+#### Clone remote database to local
 
 ```bash
-dep db:clone
+dep db:pull
 ```
 
-You may override the default ddev command to restore the dump file onto your local database, depending on your development environment's requirements:
+You may alternatively use its alias `dep db:clone`.
+
+#### Push local database to remote
+
+```bash
+dep db:push
+```
+
+#### Overriding the default database dump and restore commands
+
+By default, ddev specific commands have been set to dump and restore the database.
+You may override the locally executed commands depending on your development environment's requirements:
 
 ```php
 # deploy.php
 // this is an example for restoring a database dump with mysql
-set('local_cmd_db_restore', 'mysql -u $dbUser -p $dbPass $dbName < var/backup/{{db_dump_filename}}');
+set('local_cmd_db_restore', "mysql -u $dbUser -p $dbPass $dbName < var/backup/{{db_dump_filename}}");
+set('local_cmd_db_dump', "mysqldump -u $dbUser -p $dbPass $dbName > var/backup/{{db_dump_filename}}");
+set('local_cmd_db_list', "my-command-that-lists-all-backups --format=json  # [{dateAdded: 'tstamp', name: 'filename'}, ...]");
 ```
 
 ## Work in Progress
