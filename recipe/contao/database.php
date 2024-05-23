@@ -92,6 +92,8 @@ task('db:push', static function () {
         throw new \RuntimeException('No backup found');
     }
 
+    set('db_dump_filename', $filename);
+
     // uploading backup
     info("Uploading database backup: $filename");
     upload("var/backups/$filename", '{{current_path}}/var/backups/');
