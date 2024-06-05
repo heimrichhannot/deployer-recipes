@@ -142,7 +142,8 @@ foreach (getHosts() as $host) {
 
 ### The alias placeholder
 
-Depending on your setup, you may want to automatically place different environments in respective directories. You can use the `{{alias}}` placeholder to differentiate between the environments' alias names.
+Depending on your setup, you may want to automatically place different environments on the same host in respective directories.
+You can use the `{{alias}}` placeholder to differentiate between the hosts' aliases as environment names.
 
 For example:
 ```php
