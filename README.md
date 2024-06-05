@@ -140,6 +140,18 @@ foreach (getHosts() as $host) {
 > [!NOTE]
 > This documentation might change in the future as there might be a better way to achieve this. Keep yourself posted.
 
+### The alias placeholder
+
+Depending on your setup, you may want to automatically place different environments in respective directories. You can use the `{{alias}}` placeholder to differentiate between the environments' alias names.
+
+For example:
+```php
+host('stage') // <- this is the alias
+    ->setRemoteUser('www_data')
+    ->set('deploy_path', '/usr/www/users/{{remote_user}}/docroot/{{alias}}')
+; // will be evaluated to /usr/www/users/www_data/docroot/stage
+```
+
 ## Utility Commands
 
 ### Clear the cache on the remote server
