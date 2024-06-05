@@ -37,6 +37,7 @@ host('www.example.org')
     ->set('public_dir', 'public')
     ->set('deploy_path', '/usr/www/users/{{remote_user}}/docroot')
     ->set('bin/php', 'php82')
+    ->set('bin/composer', 'composer')
     ->set('release_name', fn() => date('y-m-d_H-i-s'))
     /** In case ACL is unavailable, use chmod instead */
     // ->set('writable_mode', 'chmod')
@@ -93,12 +94,14 @@ If you want to set common variables for all hosts, use the provided method chain
 
 ```php
 host('stage')
-    ->set('deploy_path', '/usr/www/users/{{remote_user}}/stage')
-    ->setLabels(['env' => 'stage']);
+    ->set('public_url', 'https://stage.example.org')
+    ->setLabels(['env' => 'stage'])
+;
 
 host('production')
-    ->set('deploy_path', '/usr/www/users/{{remote_user}}/live')
-    ->setLabels(['env' => 'prod']);
+    ->set('public_url', 'https://www.example.org')
+    ->setLabels(['env' => 'prod'])
+;
 
 // use the method chain factory
 onAllHosts()
@@ -107,7 +110,9 @@ onAllHosts()
     ->setRemoteUser('www_data')
     ->set('http_user', 'www_data')
     ->set('public_dir', 'public')
+    ->set('deploy_path', '/usr/www/users/{{remote_user}}/docroot/{{alias}}')
     ->set('bin/php', 'php82')
+    ->set('bin/composer', 'composer')
     ->set('release_name', fn() => date('y-m-d_H-i-s'))
 ;
 ```
@@ -122,7 +127,9 @@ foreach (getHosts() as $host) {
         ->setRemoteUser('www_data')
         ->set('http_user', 'www_data')
         ->set('public_dir', 'public')
+        ->set('deploy_path', '/usr/www/users/{{remote_user}}/docroot/{{alias}}')
         ->set('bin/php', 'php82')
+        ->set('bin/composer', 'composer')
         ->set('release_name', fn() => date('y-m-d_H-i-s'))
     ;
 }
