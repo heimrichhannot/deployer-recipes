@@ -102,8 +102,8 @@ task('cache:clear', function () {
     writeln(run('{{bin/console}} cache:clear {{console_options}}'));
 });
 
-desc('Clear opt cache on remote server');
-task('cache:opcache:clear', function () {
+desc('Clear opcache on remote server');
+task('opcache:clear', function () {
     if (!has('public_url')) {
         warning('No public_url defined. Skipping opcache clear.');
         return;
@@ -136,3 +136,6 @@ task('cache:opcache:clear', function () {
 
     info('Opcache cleared!');
 });
+
+desc('Alias for opcache:clear');
+task('cache:opcache:clear', ['opcache:clear']);
