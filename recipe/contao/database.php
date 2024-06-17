@@ -379,5 +379,9 @@ task('db:export:remote', static function () {
     if (askConfirmation('Download the exported database dump?', true)) {
         download("{{current_path}}/var/backups/$filename", 'var/backups/');
         info('Database dump downloaded successfully');
+
+        if (askConfirmation('Delete the exported database dump on remote?', false)) {
+            run("rm {{current_path}}/var/backups/$filename");
+        }
     }
 })->once();
