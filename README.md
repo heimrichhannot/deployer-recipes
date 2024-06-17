@@ -175,43 +175,16 @@ dep deploy:assets
 
 ### Database actions
 
-#### Clone remote database to local
+| Action                         | Command                |
+|--------------------------------|------------------------|
+| Clone remote database to local | `dep db:pull`          |
+| Push local database to remote  | `dep db:push`          |
+| Export remote database         | `dep db:export:remote` |
+| Export local database          | `dep db:export:local`  |
+| Import database on remote      | `dep db:import:remote` |
+| Import database locally        | `dep db:import:local`  |
 
-```bash
-dep db:pull
-```
-
-You may alternatively use its alias `dep db:clone`.
-
-#### Push local database to remote
-
-```bash
-dep db:push
-```
-
-#### Export remote database
-
-```bash
-dep db:export:remote
-```
-
-#### Export local database
-
-```bash
-dep db:export:local
-```
-
-#### Import database on remote
-
-```bash
-dep db:import:remote
-```
-
-#### Import database locally
-
-```bash
-dep db:import:local
-```
+You may alternatively use its alias `dep db:clone` for `dep db:pull`.
 
 #### What to do when `mysql` or `mysqldump` is unavailable
 
