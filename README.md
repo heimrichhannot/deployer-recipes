@@ -184,12 +184,6 @@ dep deploy:assets
 | Import database on remote      | <pre lang="bash">dep db:import:remote</pre> |
 | Import database locally        | <pre lang="bash">dep db:import:local</pre>  |
 
-<style>
-    td .highlight {
-        margin-bottom: 0;
-    }
-</style>
-
 You may alternatively use its alias `dep db:clone` for `dep db:pull`.
 
 #### What to do when `mysql` or `mysqldump` is unavailable
