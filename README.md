@@ -175,14 +175,14 @@ dep deploy:assets
 
 ### Database actions
 
-| Action                         | Command                                     |
-|--------------------------------|---------------------------------------------|
-| Clone remote database to local | <pre lang="bash">dep db:pull</pre>          |
-| Push local database to remote  | <pre lang="bash">dep db:push</pre>          |
-| Export remote database         | <pre lang="bash">dep db:export:remote</pre> |
-| Export local database          | <pre lang="bash">dep db:export:local</pre>  |
-| Import database on remote      | <pre lang="bash">dep db:import:remote</pre> |
-| Import database locally        | <pre lang="bash">dep db:import:local</pre>  |
+| <img width="441" height="1"> Action | <img width="441" height="1"> Command        |
+|-------------------------------------|---------------------------------------------|
+| Clone remote database to local      | <pre lang="bash">dep db:pull</pre>          |
+| Push local database to remote       | <pre lang="bash">dep db:push</pre>          |
+| Export remote database              | <pre lang="bash">dep db:export:remote</pre> |
+| Export local database               | <pre lang="bash">dep db:export:local</pre>  |
+| Import database on remote           | <pre lang="bash">dep db:import:remote</pre> |
+| Import database locally             | <pre lang="bash">dep db:import:local</pre>  |
 
 You may alternatively use its alias `dep db:clone` for `dep db:pull`.
 
