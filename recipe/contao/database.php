@@ -330,6 +330,7 @@ task('db:import:remote', static function () {
 
     $filenames = run("find {{current_path}}/var/backups/ -name \*.sql -printf '%f\n'");
     $filenames = \explode("\n", $filenames);
+    \sort($filenames, \SORT_NATURAL);
 
     $filename = askChoice('Choose a backup to import', $filenames);
     if (!test("test -f {{current_path}}/var/backups/$filename")) {
