@@ -189,18 +189,40 @@ You may alternatively use its alias `dep db:clone`.
 dep db:push
 ```
 
-#### Overriding the default database dump and restore commands
+#### Export remote database
 
-By default, ddev specific commands have been set to dump and restore the database.
-You may override the locally executed commands depending on your development environment's requirements:
+```bash
+dep db:export:remote
+```
+
+#### Export local database
+
+```bash
+dep db:export:local
+```
+
+#### Import database on remote
+
+```bash
+dep db:import:remote
+```
+
+#### Import database locally
+
+```bash
+dep db:import:local
+```
+
+#### What to do when `mysql` or `mysqldump` is unavailable
+
+You can change the pull and push commands to use the `contao:backup` commands instead of `mysql` and `mysqldump`:
 
 ```php
-# deploy.php
-// this is an example for restoring a database dump with mysql
-set('local_cmd_db_restore', "mysql -u $dbUser -p $dbPass $dbName < var/backup/{{db_dump_filename}}");
-set('local_cmd_db_dump', "mysqldump -u $dbUser -p $dbPass $dbName > var/backup/{{db_dump_filename}}");
-set('local_cmd_db_list', "my-command-that-lists-all-backups --format=json");  # [{dateAdded: tstamp, name: 'filename'}, ...]
+set('db_dump_mode', 'contao');
 ```
+
+> [!NOTE]
+> This will only work if your local and remote databases are compatible.
 
 ## Work in Progress
 

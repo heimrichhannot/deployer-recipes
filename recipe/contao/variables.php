@@ -37,3 +37,9 @@ add('shared_files', [
     'system/config/localconfig.php',
     '.env',
 ]);
+
+set('bin/contao-console', '{{bin/php}} {{release_path}}/vendor/bin/contao-console');
+
+set('local/bin/contao-console', function () {
+    return runLocally('which contao-console');
+});

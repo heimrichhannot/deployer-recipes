@@ -9,9 +9,9 @@ set('ddev_cmd_yd', '{{ddev_global_commands}}/web/encore_yd');
 set('ddev_cmd_cclear', '{{ddev_global_commands}}/web/contao_cache_clear');
 
 // set the local/remote database restore command to the contao console command within ddev
-set('local_cmd_db_restore', "{{ddev_global_commands}}/web/contao_console contao:backup:restore {{db_dump_filename}} {{console_options}}");
-set('local_cmd_db_dump', "{{ddev_global_commands}}/web/contao_console contao:backup:create {{console_options}}");
-set('local_cmd_db_list', "{{ddev_global_commands}}/web/contao_console contao:backup:list --format=json {{console_options}}");
+set('local_cmd_db_restore', "{{local/bin/contao-console}} contao:backup:restore {{db_dump_filename}} {{console_options}}");
+set('local_cmd_db_dump', "{{local/bin/contao-console}} contao:backup:create {{console_options}}");
+set('local_cmd_db_list', "{{local/bin/contao-console}} contao:backup:list --format=json {{console_options}}");
 
 desc('Run yarn encore production build task');
 task('ddev:yp', function () {
