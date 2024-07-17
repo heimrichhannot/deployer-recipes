@@ -208,6 +208,10 @@ Contao-Manager is set to deploy automatically by default. If you prefer to disab
 set('contao_manager_deploy', false);
 ```
 
+Contao-Manager will download the latest version of the Contao-Manager phar file and deploy it to `{{deploy_path}}/shared/{{public_dir}}/contao-manager.phar.php`. After that, it will be symlinked to `{{release_or_current_path}}/{{public_dir}}/contao-manager.phar.php`.
+
+If it already exists, it will perform a self-update.
+
 ### Conditional Deployment
 
 Automated deployment of Contao-Manager will not proceed if there is a file named `contao-manager.phar.php` present in your `shared_files`.
@@ -217,6 +221,17 @@ An example in which automated deployment is skipped:
 add('shared_files', [
     '{{public_path}}/contao-manager.phar.php',
 ]);
+```
+
+This way, if you don't want the remote host to automatically fetch Contao-Manager from the internet, you can set up your shared files accordingly and don't need to touch `contao_manager_deploy`.
+
+### Sourcing Contao-Manager from a different location
+
+If you want to change the source URL of `contao-manager.phar`, e.g., if you host your own Contao-Manager mirror, you can set the following variable:
+
+```php
+// this is the default value
+set('contao_manager_source', 'https://download.contao.org/contao-manager/stable/contao-manager.phar');
 ```
 
 ## Work in Progress
