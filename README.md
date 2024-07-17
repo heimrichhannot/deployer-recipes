@@ -83,6 +83,9 @@ host('www.example.org')
 
 /** @example Don't automatically deploy contao-manager */
 // set('contao_manager_deploy', false);
+
+/** @example Disable confirmation input when going live */
+// set('confirm_prod', false);
 ```
 
 ## Setup of multiple hosts or environments
