@@ -1,9 +1,13 @@
 <?php
 
-set_include_path(get_include_path() . PATH_SEPARATOR . __DIR__);
+namespace Deployer;
 
-const __HUH_DEPLOYER_DIR__ = __DIR__;
+\set_include_path(\get_include_path() . PATH_SEPARATOR . __DIR__);
 
-if (class_exists(Deployer\Deployer::class)) {
-    require_once __DIR__ . '/extension/loader.php';
+if (!\class_exists(Deployer::class))
+{
+    return;
 }
+
+require_once 'extension/functions.php';
+require_once 'extension/tasks.php';

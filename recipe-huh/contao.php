@@ -3,12 +3,12 @@
 namespace Deployer;
 
 import('recipe/contao.php');
-import(__DIR__ . '/contao/variables.php');
-import(__DIR__ . '/contao/composer.php');
-import(__DIR__ . '/contao/contao-manager.php');
-import(__DIR__ . '/contao/ddev.php');
-import(__DIR__ . '/contao/tasks.php');
-import(__DIR__ . '/contao/database.php');
+import('recipe-huh/contao/variables.php');
+import('recipe-huh/contao/composer.php');
+import('recipe-huh/contao/contao-manager.php');
+import('recipe-huh/contao/ddev.php');
+import('recipe-huh/contao/tasks.php');
+import('recipe-huh/contao/database.php');
 
 desc('Prepares a new release');
 task('deploy:prepare', [
@@ -22,6 +22,8 @@ task('deploy:prepare', [
     'deploy:contao-manager',
     'deploy:writable',
 ]);
+
+before('deploy', 'ask_production_confirmation');
 
 after('deploy', 'cache:opcache:clear');
 after('deploy:failed', 'deploy:unlock');

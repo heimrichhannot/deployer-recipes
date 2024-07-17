@@ -85,7 +85,7 @@ host('www.example.org')
 // set('contao_manager_deploy', false);
 ```
 
-## Setup multiple hosts or environments
+## Setup of multiple hosts or environments
 
 You may set up multiple hosts or environments by using the `host()` function multiple times.
 If you do not specify **[selectors](https://deployer.org/docs/7.x/selector)** (like labels) when running your deployer commands, you will be asked to choose which hosts to run that command for.
@@ -200,7 +200,7 @@ set('db_dump_mode', 'contao');
 > [!NOTE]
 > This will only work if your local and remote databases are compatible.
 
-## Contao-Manager automated deployment
+## Contao-Manager automated Deployment
 
 Contao-Manager is set to deploy automatically by default. If you prefer to disable this automatic deployment, you can configure the following variable in your deployment script:
 

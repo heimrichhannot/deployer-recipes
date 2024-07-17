@@ -13,12 +13,7 @@ use Deployer\Host\HostCollection;
  */
 function recipe(string $recipe): void
 {
-    $recipePath = __HUH_DEPLOYER_DIR__ . '/recipe/' . $recipe . '.php';
-    if (file_exists($recipePath)) {
-        import($recipePath);
-    } else {
-        throw new Exception('Invalid recipe name.');
-    }
+    import("recipe-huh/$recipe.php");
 }
 
 /**

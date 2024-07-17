@@ -2,12 +2,23 @@
 
 namespace Deployer;
 
-task('ask_confirm_prod', function () {
-    $env = strtolower(get('labels')['env'] ?? 'prod');
-    if (!in_array($env, ['prod', 'production', 'live'])) {
+desc('Ask for confirmation before deploying to production');
+task('ask_production_confirmation', function () {
+    if (!get('confirm_prod', true)) {
         return;
     }
-    if (!askConfirmation('Are you sure you want to deploy to production?', true)) {
+
+    $markers = get('tags_production', ['prod', 'production', 'live']);
+    $env = \strtolower(get('labels')['env'] ?? 'prod');
+    $alias = get('alias');
+
+    if (!\in_array($env, $markers) && !\in_array($alias, $markers)) {
+        return;
+    }
+
+    if (!askConfirmation("Are you sure you want to deploy to production environment \"$alias\"?", true)) {
         die('Bye!');
     }
 });
+
+task('ask_confirm_prod', ['ask_production_confirmation']);

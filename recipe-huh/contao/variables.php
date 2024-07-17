@@ -43,3 +43,5 @@ set('bin/contao-console', '{{bin/php}} {{release_path}}/vendor/bin/contao-consol
 set('local/bin/contao-console', function () {
     return runLocally('which contao-console');
 });
+
+set('tags_production', ['prod', 'production', 'live']);
