@@ -80,6 +80,9 @@ host('www.example.org')
 
 /** @example Deploy `files/themes`, which are shared and not updated by default */
 // after('deploy:shared', 'deploy:themes');
+
+/** @example Don't automatically deploy contao-manager */
+// set('contao_manager_deploy', false);
 ```
 
 ## Setup multiple hosts or environments
@@ -196,6 +199,25 @@ set('db_dump_mode', 'contao');
 
 > [!NOTE]
 > This will only work if your local and remote databases are compatible.
+
+## Contao-Manager automated deployment
+
+Contao-Manager is set to deploy automatically by default. If you prefer to disable this automatic deployment, you can configure the following variable in your deployment script:
+
+```php
+set('contao_manager_deploy', false);
+```
+
+### Conditional Deployment
+
+Automated deployment of Contao-Manager will not proceed if there is a file named `contao-manager.phar.php` present in your `shared_files`.
+
+An example in which automated deployment is skipped:
+```php
+add('shared_files', [
+    '{{public_path}}/contao-manager.phar.php',
+]);
+```
 
 ## Work in Progress
 
