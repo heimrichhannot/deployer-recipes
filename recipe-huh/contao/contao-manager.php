@@ -27,8 +27,12 @@ task('deploy:contao-manager', function () {
         // skip download
         info("contao-manager.phar.php already exists in shared, won't download it again");
         // self-update contao-manager.phar
-        run("{{bin/php}} $sharedFile self-update");
-        info('contao-manager.phar.php self-updated successfully');
+        try {
+            run("{{bin/php}} $sharedFile self-update");
+            info('contao-manager.phar.php self-updated successfully');
+        } catch (\Throwable $e) {
+            warning('contao-manager.phar.php self-update failed: ' . $e->getMessage());
+        }
     }
     else
     {
