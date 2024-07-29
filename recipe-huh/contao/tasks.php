@@ -2,7 +2,6 @@
 
 namespace Deployer;
 
-use Deployer\Exception\ConfigurationException;
 use Symfony\Component\Console\Output\OutputInterface;
 
 desc('Upload project files');
@@ -139,3 +138,37 @@ task('opcache:clear', function () {
 
 desc('Alias for opcache:clear');
 task('cache:opcache:clear', ['opcache:clear']);
+
+desc('Create predefined symlinks');
+task('deploy:symlinks', static function () {
+    $symlinks = get('symlinks');
+    if (empty($symlinks)) {
+        return;
+    }
+
+    foreach ($symlinks as $link => $target)
+    {
+        $link = ['{{release_or_current_path}}', ...\explode('/', $link)];
+        $link = \implode('/', $link);
+        $link = parse($link);
+
+        if (test("[ -L $link ]")) {
+            run("rm -rf $link");
+        }
+
+        if (test("[ -d $link ]")) {
+            warning("The directory \"$link\" already exists and is not a symlink. It will be skipped.");
+            continue;
+        }
+
+        if (test("[ -e $link ]")) {
+            warning("The file \"$link\" already exists and is not a symlink. It will be skipped.");
+            continue;
+        }
+
+        $target = parse($target);
+
+        run("ln -ns $target $link");
+        info("symlinked: $link -> $target");
+    }
+});

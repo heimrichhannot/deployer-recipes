@@ -21,6 +21,7 @@ task('deploy:prepare', [
     'deploy:shared',
     'deploy:contao-manager',
     'deploy:writable',
+    'deploy:symlinks'
 ]);
 
 before('deploy', 'ask_production_confirmation');
