@@ -82,38 +82,51 @@ task('db:pull:contao', static function () {
     }
 });
 
-function extractDatabaseFromIni(string $filepath): array
+function extractDatabaseFromIni(string $filepath): ?array
 {
     $env = \parse_ini_file($filepath);
 
     $regex = '/mysql:\/\/(?P<user>[^:]+)(?::(?P<pass>[^@]+))?@(?P<host>[^:]+):(?P<port>[^\/]+)\/(?P<db>.+)/';
-    $url = $env['DATABASE_URL'];
+    $url = $env['DATABASE_URL'] ?? null;
+
+    if (!$url) {
+        return null;
+    }
+
     \preg_match($regex, $url, $matches);
 
     return $matches;
 }
 
-function databaseParamsToCliString(array $matches): string
+function databaseParamsToCliString(array $matches): ?string
 {
-    $dbUser = $matches['user'];
+    $dbUser = $matches['user'] ?? null;
     $dbPass = $matches['pass'] ?? '';
-    $dbHost = $matches['host'];
+    $dbHost = $matches['host'] ?? null;
     $dbPort = $matches['port'] ?? '3306';
-    $dbName = $matches['db'];
+    $dbName = $matches['db'] ?? null;
     $pass = $dbPass ? "-p$dbPass" : '--password=""';
+
+    if (!$dbUser || !$dbHost || !$dbName) {
+        return null;
+    }
 
     return "$pass -u $dbUser -h $dbHost -P $dbPort $dbName";
 }
 
 desc('Clone database from remote with mysqldump and mysql.');
 task('db:pull:mysql', static function () {
-
     info('Fetching remote database credentials');
     runLocally('mkdir -p var/tmp');
     $absPath = run('readlink -f {{current_path}}/.env.local');
     download($absPath, 'var/tmp/.env.remote');
 
     $matches = extractDatabaseFromIni('var/tmp/.env.remote');
+
+    if ($matches === null) {
+        throw new \RuntimeException('No remote database credentials found in .env.local of remote host');
+    }
+
     $conn = databaseParamsToCliString($matches);
     $dbName = $matches['db'];
 
@@ -124,10 +137,12 @@ task('db:pull:mysql', static function () {
     $now = \date('Y-m-d_H-i-s_');
     $filename = "$now$dbName.sql";
 
+    run("mkdir -p {{current_path}}/var/backups");
     run("{{bin/mysqldump}} --add-drop-table $conn > {{current_path}}/var/backups/$filename");
 
     // download backup
     info("Downloading database backup: $filename");
+    runLocally('mkdir -p var/backups');
     download("{{current_path}}/var/backups/$filename", 'var/backups/');
     info('Database backup downloaded successfully');
 
@@ -140,7 +155,7 @@ task('db:pull:mysql', static function () {
         $matches = extractDatabaseFromIni('.env');
     }
     if (empty($matches)) {
-        throw new \RuntimeException('No database credentials found in .env.local or .env');
+        throw new \RuntimeException('No local database credentials found in local .env.local or .env');
     }
     $localConn = databaseParamsToCliString($matches);
     runLocally("mysql $localConn < var/backups/$filename", ['timeout' => null]);
@@ -234,7 +249,6 @@ task('db:push:contao', static function () {
 
 desc('Push the local database to remote with mysqldump and mysql.');
 task('db:push:mysql', static function () {
-
     $matches = extractDatabaseFromIni('.env.local');
     if (empty($matches)) {
         $matches = extractDatabaseFromIni('.env');
@@ -249,6 +263,7 @@ task('db:push:mysql', static function () {
     info('Creating database backup of local database');
     $now = \date('Y-m-d_H-i-s_');
     $filename = "$now$dbName.sql";
+    runLocally('mkdir -p var/backups');
     runLocally("{{bin/mysqldump}} --add-drop-table $localConn > var/backups/$filename");
     info("Database backup created successfully: $filename");
 
@@ -269,6 +284,7 @@ task('db:push:mysql', static function () {
         $now = \date('Y-m-d_H-i-s_');
         $remoteBackupFilename = "backup_$now$dbName.sql";
         info('Creating database backup on remote');
+        run("mkdir -p {{current_path}}/var/backups");
         run("{{bin/mysqldump}} --add-drop-table $remoteConn > {{current_path}}/var/backups/$remoteBackupFilename");
         info("Database backup created successfully: $remoteBackupFilename");
     }
