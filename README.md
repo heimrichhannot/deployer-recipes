@@ -45,47 +45,52 @@ host('www.example.org')
 ```
 ```php
 /** @example Add project-specific files */
-// add('project_files', [
-//     'config/routes.yaml',
-//     'translations',
-// ]);
+add('project_files', [
+    'config/routes.yaml',
+    'translations',
+]);
 
 /** @example Remove values from any variable */
-// remove('project_files', [
-//    'files/themes',
-//    'templates'
-// ]);
+remove('project_files', [
+   'files/themes',
+   'templates'
+]);
 
 /** @example Add project-specific files to exclude from deploy */
-// add('exclude', [
-//     '.githooks',
-// ]);
+add('exclude', [
+    '.githooks',
+]);
 
 /** @example Add a shared .htpasswd or any other file */
-// add('shared_files', [
-//     '{{public_path}}/.htpasswd'
-// ]);
+add('shared_files', [
+    '{{public_path}}/.htpasswd'
+]);
 
 /** @example Ask confirmation before running migrations */
-// set('ask_confirm_migrate', true);
+set('ask_confirm_migrate', true);
 
 /** @example Do not create backup on migration */
-// set('create_db_backup', false);
+set('create_db_backup', false);
 
 /** @example Add yarn build task before deploying */
-// before('deploy', 'ddev:yp');
+before('deploy', 'ddev:yp');
 
 /** @example Ask confirmation before going live */
-// before('deploy', 'ask_confirm_prod');
+before('deploy', 'ask_confirm_prod');
 
 /** @example Deploy `files/themes`, which are shared and not updated by default */
-// after('deploy:shared', 'deploy:themes');
+after('deploy:shared', 'deploy:themes');
 
 /** @example Don't automatically deploy contao-manager */
-// set('contao_manager_deploy', false);
+set('contao_manager_deploy', false);
 
 /** @example Disable confirmation input when going live */
-// set('confirm_prod', false);
+set('confirm_prod', false);
+
+/** @example Create symlinks on deployment */
+add('symlinks', [
+    '{{public_dir}}/example' => '../relative/path/to/target',
+]);
 ```
 
 ## Setup of multiple hosts or environments
@@ -235,6 +240,25 @@ If you want to change the source URL of `contao-manager.phar`, e.g., if you host
 ```php
 // this is the default value
 set('contao_manager_source', 'https://download.contao.org/contao-manager/stable/contao-manager.phar');
+```
+
+## Adding Symlinks
+
+You can add symlinks to your deployment by using the `symlinks` configuration variable.
+
+```php
+add('symlinks', [
+    'path/to/link' => '../relative/path/to/target',
+    '{{public_dir}}/example' => '../relative/path/to/another/target',
+]);
+```
+
+The link path is relative to the `{{release_or_current_path}}` directory.
+
+To regenerate symlinks after deployment, you can use the following command:
+
+```bash
+dep deploy:symlinks
 ```
 
 ## Work in Progress
