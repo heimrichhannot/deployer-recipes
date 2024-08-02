@@ -80,7 +80,7 @@ task('db:pull:contao', static function () {
     if (askConfirmation('Delete cloned database dump file locally?', false)) {
         runLocally("rm var/backups/$filename");
     }
-});
+})->once();
 
 function extractDatabaseFromIni(string $filepath): ?array
 {
@@ -168,7 +168,7 @@ task('db:pull:mysql', static function () {
     if (askConfirmation('Delete cloned database dump file locally?', false)) {
         runLocally("rm var/backups/$filename");
     }
-});
+})->once();
 
 desc('Push the local database to remote.');
 task('db:push', static function () {
@@ -305,7 +305,7 @@ task('db:push:mysql', static function () {
     if (askConfirmation('Delete pushed database backup file locally?', false)) {
         runLocally("rm var/backups/$filename");
     }
-});
+})->once();
 
 desc('Import a local database backup with mysql');
 task('db:import:local', static function () {
@@ -355,7 +355,7 @@ task('db:import:remote', static function () {
 
     run("mysql $conn < {{current_path}}/var/backups/$filename", ['timeout' => null]);
     info('Database imported successfully');
-});
+})->once();
 
 desc('Export the local database with mysqldump');
 task('db:export:local', static function () {
