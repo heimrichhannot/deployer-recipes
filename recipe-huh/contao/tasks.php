@@ -139,6 +139,22 @@ task('opcache:clear', function () {
 desc('Alias for opcache:clear');
 task('cache:opcache:clear', ['opcache:clear']);
 
+desc('Reaload PHP FastCGI');
+task('php-fcgi:reload', function () {
+    if (get('reload_php_fcgi', false) === false) {
+        info('PHP FastCGI reload is disabled. Set "reload_php_fcgi" to true to enable it.');
+        return;
+    }
+
+    $res = run('sg users -c \'pgrep -U $(id -u) "^php[0-9]+\.fcgi$"\' | xargs --no-run-if-empty kill -USR1');
+    if ($res) {
+        writeln($res);
+        warning('PHP FastCGI reload failed.');
+    } else {
+        info('PHP FastCGI reloaded');
+    }
+});
+
 desc('Create predefined symlinks');
 task('deploy:symlinks', static function () {
     $symlinks = get('symlinks');

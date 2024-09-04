@@ -72,20 +72,20 @@ set('ask_confirm_migrate', true);
 /** @example Do not create backup on migration */
 set('create_db_backup', false);
 
-/** @example Add yarn build task before deploying */
-before('deploy', 'ddev:yp');
-
-/** @example Ask confirmation before going live */
-before('deploy', 'ask_confirm_prod');
-
-/** @example Deploy `files/themes`, which are shared and not updated by default */
-after('deploy:shared', 'deploy:themes');
+/** @example Reload PHP-FPM after deployment */
+set('reload_php_fcgi', true);
 
 /** @example Don't automatically deploy contao-manager */
 set('contao_manager_deploy', false);
 
 /** @example Disable confirmation input when going live */
 set('confirm_prod', false);
+
+/** @example Add yarn build task before deploying */
+before('deploy', 'ddev:yp');
+
+/** @example Deploy `files/themes`, which are shared and not updated by default */
+after('deploy:shared', 'deploy:themes');
 
 /** @example Create symlinks on deployment */
 add('symlinks', [

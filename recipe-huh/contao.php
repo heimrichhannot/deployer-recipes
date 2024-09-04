@@ -27,4 +27,6 @@ task('deploy:prepare', [
 before('deploy', 'ask_production_confirmation');
 
 after('deploy', 'cache:opcache:clear');
+after('deploy', 'php-fcgi:reload');
+
 after('deploy:failed', 'deploy:unlock');
