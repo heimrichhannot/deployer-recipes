@@ -39,23 +39,45 @@ function remove(string $variableName, $needle): void
  *
  * @return Host[]|HostCollection
  */
-function getHosts()
+function getHosts(): array|HostCollection
 {
     return Deployer::get()->hosts;
 }
 
 /**
- * Returns a method chain factory to run the given methods with their specified arguments on all hosts.
+ * Returns an object that forwards any method call to all selected hosts,
+ *   allowing you to call the same method on multiple hosts at once.
+ * If no selector is provided, all hosts from getHosts() are selected.
+ *
+ * @example
+ *   broadcast()->set('deploy_path', '/var/www/htdocs/{{alias}}');
+ *   broadcast('env=stage')->setHostname('stage.example.com');
  */
-function onAllHosts(): object
+function broadcast(?string $selector = null): object
 {
-    return new class() {
+    return new class($selector) {
+        public function __construct(public readonly ?string $selector) {}
+
         public function __call($name, $arguments): self
         {
-            foreach (getHosts() as $host) {
+            $selected = $this->selector ? select($this->selector) : getHosts();
+
+            foreach ($selected as $host) {
                 $host->$name(...$arguments);
             }
+
             return $this;
         }
     };
+}
+
+/**
+ * Returns an object that forwards any method call to all hosts from getHosts(),
+ *   allowing you to call the same method on multiple hosts at once.
+ *
+ * @deprecated Use broadcast() instead.
+ */
+function onAllHosts(): object
+{
+    return broadcast();
 }
