@@ -98,7 +98,7 @@ add('symlinks', [
 You may set up multiple hosts or environments by using the `host()` function multiple times.
 If you do not specify **[selectors](https://deployer.org/docs/7.x/selector)** (like labels) when running your deployer commands, you will be asked to choose which hosts to run that command for.
 
-If you want to set common variables for all hosts, use the provided proxy function `onAllHosts()`, to call any number of methods on all previously defined hosts.
+If you want to set common variables for all hosts, use the provided proxy function `broadcast()`, to call any number of methods on all previously defined hosts.
 
 > [!IMPORTANT]
 > Make sure to use **[labels](https://deployer.org/docs/7.x/selector)** to differentiate between environments when defining multiple hosts.
