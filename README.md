@@ -91,6 +91,9 @@ after('deploy:shared', 'deploy:themes');
 add('symlinks', [
     '{{public_dir}}/example' => '../relative/path/to/target',
 ]);
+
+/** @example Adjust the number of stored releases */
+set('keep_releases', 10);
 ```
 
 ## Setup of multiple hosts or environments
