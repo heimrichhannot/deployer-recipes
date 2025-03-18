@@ -39,7 +39,7 @@ function remove(string $variableName, $needle): void
  *
  * @return Host[]|HostCollection
  */
-function getHosts(): array|HostCollection
+function getHosts()
 {
     return Deployer::get()->hosts;
 }
@@ -56,7 +56,10 @@ function getHosts(): array|HostCollection
 function broadcast(?string $selector = null): object
 {
     return new class($selector) {
-        public function __construct(public readonly ?string $selector) {}
+
+        public ?string $selector;
+
+        public function __construct(?string $selector) {}
 
         public function __call($name, $arguments): self
         {

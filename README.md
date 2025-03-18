@@ -37,7 +37,6 @@ host('www.example.org')
     ->set('public_dir', 'public')
     ->set('deploy_path', '/usr/www/users/{{remote_user}}/docroot')
     ->set('bin/php', 'php82')
-    ->set('bin/composer', 'composer')
     ->set('release_name', fn() => date('y-m-d_H-i-s'))
     /** In case ACL is unavailable, use chmod instead */
     // ->set('writable_mode', 'chmod')
