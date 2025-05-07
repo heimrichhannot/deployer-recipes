@@ -29,6 +29,9 @@ recipe('contao');
 
 set('rsync_src', __DIR__);
 
+// Working configuration for Hetzner Server below.
+// Un-comment it to set it, and comment host(...) instead.
+
 host('www.example.org')
     ->setPort(22)
     ->setRemoteUser('www_data')
@@ -41,6 +44,65 @@ host('www.example.org')
     /** In case ACL is unavailable, use chmod instead */
     // ->set('writable_mode', 'chmod')
 ;
+
+// Working recipe for Hetzner Server below, using the stage/production scheme.
+// Replaces host(...) above!
+//
+// 1. Run `ddev yp` before `ddev dep deploy`
+// 2. Run `ddev dep db:push` optionally and AFTER using Deployer.
+// 3. Set the actual domain of the site in the Contao backend after Deployer has finished the process.
+//    Set it in Content > Pages > Ronaele > Domain Name.
+
+//host('stage')
+//    ->set('public_url', 'https://dev.example.org')
+//    ->setLabels(['env' => 'stage'])
+//;
+//
+//host('production')
+//    ->set('public_url', 'https://www.example.org')
+//    ->setLabels(['env' => 'prod'])
+//;
+//
+//broadcast()
+//    ->setHostname('example.your-server.de')
+//    ->setPort(222)
+//    ->setRemoteUser('johndoe')
+//    ->set('http_user', 'johndoe')
+//    ->set('public_dir', 'public')
+//    ->set('deploy_path', '/usr/www/users/{{remote_user}}/{{alias}}/example.net')
+//    ->set('bin/php', 'php84')
+//    ->set('release_name', fn() => date('y-m-d_H-i-s'))
+//;
+
+set('project_files', [
+    'composer.json',
+    'composer.lock',
+    'config/config{{yaml_ext}}',
+    'contao',
+    'files/examplefolder', // Depends on your project !
+    'files/layout', // Depends on your project !
+    'files/theme', // Depends on your project !
+    'src',
+    'templates',
+]);
+
+set('shared_dirs', [
+    'assets/images',
+    'contao-manager',
+    '{{public_path}}/share',
+    'var/backups',
+    'var/logs',
+]);
+
+set('shared_files', [
+    'config/parameters{{yaml_ext}}',
+    '{{public_path}}/.htaccess',
+    'system/config/localconfig.php',
+    '.env',
+    '.env.local',
+]);
+
+
 ```
 ```php
 /** @example Add project-specific files */
