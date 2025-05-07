@@ -45,11 +45,11 @@ host('www.example.org')
 set('project_files', [
     'composer.json',
     'composer.lock',
-    'config/config{{yaml_ext}}',
+    'config/config.yaml',
     'contao',
-    'files/examplefolder', // Depends on your project !
-    'files/layout', // Depends on your project !
-    'files/theme', // Depends on your project !
+    /** Change according to your project! */
+    'files/examplefolder', 
+    'files/themes',
     'src',
     'templates',
 ]);
@@ -63,13 +63,12 @@ set('shared_dirs', [
 ]);
 
 set('shared_files', [
-    'config/parameters{{yaml_ext}}',
+    'config/parameters.yaml',
     '{{public_path}}/.htaccess',
     'system/config/localconfig.php',
     '.env',
     '.env.local',
 ]);
-;
 ```
 ```php
 /** @example Add project-specific files */
