@@ -41,6 +41,34 @@ host('www.example.org')
     /** In case ACL is unavailable, use chmod instead */
     // ->set('writable_mode', 'chmod')
 ;
+
+set('project_files', [
+    'composer.json',
+    'composer.lock',
+    'config/config.yaml',
+    'contao',
+    /** Change according to your project! */
+    'files/examplefolder', 
+    'files/themes',
+    'src',
+    'templates',
+]);
+
+set('shared_dirs', [
+    'assets/images',
+    'contao-manager',
+    '{{public_path}}/share',
+    'var/backups',
+    'var/logs',
+]);
+
+set('shared_files', [
+    'config/parameters.yaml',
+    '{{public_path}}/.htaccess',
+    'system/config/localconfig.php',
+    '.env',
+    '.env.local',
+]);
 ```
 ```php
 /** @example Add project-specific files */
