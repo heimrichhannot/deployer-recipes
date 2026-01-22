@@ -101,11 +101,11 @@ function extractDatabaseFromIni(string $filepath): ?array
 function databaseParamsToCliString(array $matches): ?string
 {
     $dbUser = $matches['user'] ?? null;
-    $dbPass = $matches['pass'] ?? '';
+    $dbPass = \urldecode($matches['pass'] ?? '');
     $dbHost = $matches['host'] ?? null;
     $dbPort = $matches['port'] ?? '3306';
     $dbName = $matches['db'] ?? null;
-    $pass = $dbPass ? "-p$dbPass" : '--password=""';
+    $pass = $dbPass ? ('-p' . \escapeshellarg($dbPass)) : '--password=""';
 
     if (!$dbUser || !$dbHost || !$dbName) {
         return null;
