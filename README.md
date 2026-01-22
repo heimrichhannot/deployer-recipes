@@ -57,6 +57,9 @@ set('project_files', [
 set('shared_dirs', [
     'assets/images',
     'contao-manager',
+    # 'files/maildrum',
+    # 'files/media',
+    # 'files/social-feed',
     '{{public_path}}/share',
     'var/backups',
     'var/logs',
