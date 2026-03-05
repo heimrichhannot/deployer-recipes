@@ -9,6 +9,7 @@ import('recipe-huh/contao/contao-manager.php');
 import('recipe-huh/contao/ddev.php');
 import('recipe-huh/contao/tasks.php');
 import('recipe-huh/contao/database.php');
+import('recipe-huh/contao/files.php');
 
 desc('Prepares a new release');
 task('deploy:prepare', [

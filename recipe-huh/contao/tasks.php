@@ -89,15 +89,6 @@ task('deploy:htaccess', function () {
     }
 });
 
-desc('Downloads the files from remote.');
-task('files:retrieve', static function () {
-    if (!askConfirmation('Download remote files without deletes?')) {
-        return;
-    }
-    download("{{release_or_current_path}}/files/", 'files/');
-    info('Download of files/ directory completed');
-});
-
 desc('Clear cache on remote server');
 task('cache:clear', function () {
     writeln(run('{{bin/console}} cache:clear {{console_options}}'));
