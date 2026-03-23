@@ -43,15 +43,14 @@ host('www.example.org')
 ;
 
 set('project_files', [
-    'composer.json',
-    'composer.lock',
-    'config/config.yaml',
+    'config',
     'contao',
-    /** Change according to your project! */
-    'files/examplefolder', 
+    // 'files/examplefolder', 
     'files/themes',
     'src',
-    'templates',
+    # 'templates',
+    'composer.json',
+    'composer.lock',
 ]);
 
 set('shared_dirs', [
