@@ -52,6 +52,8 @@ task('deploy:assets', function () {
 
     run("find $buildPath -type d -exec chmod 755 {} \; -o -type f -exec chmod 644 {} \;");
 });
+after('deploy:assets', 'cache:clear');
+after('deploy:assets', 'cache:opcache:clear');
 
 desc('Upload theme files');
 task('deploy:themes', function () {
