@@ -82,10 +82,27 @@ task('db:pull:contao', static function () {
     }
 })->once();
 
+function fetchLocalDatabase(): string
+{
+    $matches = extractDatabaseFromIni('.env.local');
+    if (empty($matches)) {
+        $matches = extractDatabaseFromIni('.env');
+    }
+    if (empty($matches)) {
+        throw new \RuntimeException('No local database credentials found in local .env.local or .env');
+    }
+    $connection = databaseParamsToCliString($matches);
+    if (null === $connection) {
+        throw new \RuntimeException('No local database credentials found in local.env.local or .env');
+    }
+    return $connection;
+}
+
 function extractDatabaseFromIni(string $filepath): ?array
 {
     $env = \parse_ini_file($filepath);
 
+    $regex = '/^mysql:\/\/(?P<user>[^:\/@]+)(?::(?P<pass>[^@]*))?@(?P<host>[^:\/]+)(?::(?P<port>[^\/]+))?\/(?P<db>.+)$/';
     $regex = '/mysql:\/\/(?P<user>[^:]+)(?::(?P<pass>[^@]+))?@(?P<host>[^:]+):(?P<port>[^\/]+)\/(?P<db>.+)/';
     $url = $env['DATABASE_URL'] ?? null;
 
@@ -130,6 +147,9 @@ task('db:pull:mysql', static function () {
     $conn = databaseParamsToCliString($matches);
     $dbName = $matches['db'];
 
+    info('Fetching local database credentials');
+    $localConn = fetchLocalDatabase();
+
     \unlink('var/tmp/.env.remote');
 
     // create a backup
@@ -150,14 +170,6 @@ task('db:pull:mysql', static function () {
         return;
     }
 
-    $matches = extractDatabaseFromIni('.env.local');
-    if (empty($matches)) {
-        $matches = extractDatabaseFromIni('.env');
-    }
-    if (empty($matches)) {
-        throw new \RuntimeException('No local database credentials found in local .env.local or .env');
-    }
-    $localConn = databaseParamsToCliString($matches);
     runLocally("mysql $localConn < var/backups/$filename", ['timeout' => null]);
     info('Database cloned successfully');
 
