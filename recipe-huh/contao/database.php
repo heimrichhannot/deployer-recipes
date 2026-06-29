@@ -7,6 +7,19 @@ use Deployer\Exception\ConfigurationException;
 set('db_dump_mode', 'mysql');
 set('bin/mysql', 'mysql');
 set('bin/mysqldump', 'mysqldump');
+set('db_pull_excluded_tables', [
+    'tl_crawl_queue',
+    'tl_log',
+    'tl_md_outbox_recipient',
+    'tl_md_outbox_recipient_data',
+    'tl_md_recipient',
+    'tl_nc_queue',
+    'tl_search',
+    'tl_search_index',
+    'tl_search_term',
+    'tl_undo',
+    'tl_version',
+]);
 
 desc('Clone database from remote to local.');
 task('db:pull', static function () {
@@ -103,7 +116,7 @@ function extractDatabaseFromIni(string $filepath): ?array
     $env = \parse_ini_file($filepath);
 
     $regex = '/^mysql:\/\/(?P<user>[^:\/@]+)(?::(?P<pass>[^@]*))?@(?P<host>[^:\/]+)(?::(?P<port>[^\/]+))?\/(?P<db>.+)$/';
-    $regex = '/mysql:\/\/(?P<user>[^:]+)(?::(?P<pass>[^@]+))?@(?P<host>[^:]+):(?P<port>[^\/]+)\/(?P<db>.+)/';
+//    $regex = '/mysql:\/\/(?P<user>[^:]+)(?::(?P<pass>[^@]+))?@(?P<host>[^:]+):(?P<port>[^\/]+)\/(?P<db>.+)/';
     $url = $env['DATABASE_URL'] ?? null;
 
     if (!$url) {
@@ -120,7 +133,7 @@ function databaseParamsToCliString(array $matches): ?string
     $dbUser = $matches['user'] ?? null;
     $dbPass = \urldecode($matches['pass'] ?? '');
     $dbHost = $matches['host'] ?? null;
-    $dbPort = $matches['port'] ?? '3306';
+    $dbPort = $matches['port'] ?: '3306';
     $dbName = $matches['db'] ?? null;
     $pass = $dbPass ? ('-p' . \escapeshellarg($dbPass)) : '--password=""';
 
@@ -129,6 +142,48 @@ function databaseParamsToCliString(array $matches): ?string
     }
 
     return "$pass -u $dbUser -h $dbHost -P $dbPort $dbName";
+}
+
+function buildMysqlIgnoreTableOptions(array $tables, string $connection, string $database): string
+{
+    $tables = \array_values(\array_unique(\array_filter(\array_map(static function ($table): string {
+        return (string) $table;
+    }, $tables))));
+
+    if (empty($tables)) {
+        return '';
+    }
+
+    $sqlTableNames = \implode(',', \array_map(static function (string $table): string {
+        return mysqlQuoteString($table);
+    }, $tables));
+    $sql = \sprintf(
+        'SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME IN (%s)',
+        mysqlQuoteString($database),
+        $sqlTableNames
+    );
+    $existingTables = run("{{bin/mysql}} --batch --skip-column-names $connection --execute=" . \escapeshellarg($sql));
+    $existingTables = \array_values(\array_filter(\array_map('trim', \explode("\n", $existingTables))));
+
+    if (empty($existingTables)) {
+        return '';
+    }
+
+    $existingTables = \array_flip($existingTables);
+    $tables = \array_values(\array_filter($tables, static function (string $table) use ($existingTables): bool {
+        return isset($existingTables[$table]);
+    }));
+
+    $options = \array_map(static function (string $table) use ($database): string {
+        return \escapeshellarg("--ignore-table=$database.$table");
+    }, $tables);
+
+    return \implode(' ', $options);
+}
+
+function mysqlQuoteString(string $value): string
+{
+    return "'" . \str_replace(["\\", "'"], ["\\\\", "''"], $value) . "'";
 }
 
 desc('Clone database from remote with mysqldump and mysql.');
@@ -158,7 +213,14 @@ task('db:pull:mysql', static function () {
     $filename = "$now$dbName.sql";
 
     run("mkdir -p {{current_path}}/var/backups");
-    run("{{bin/mysqldump}} --add-drop-table $conn > {{current_path}}/var/backups/$filename");
+    $excludedTables = get('db_pull_excluded_tables');
+
+    if (!\is_array($excludedTables)) {
+        throw new ConfigurationException('db_pull_excluded_tables must be an array');
+    }
+
+    $dumpOptions = \trim('--add-drop-table ' . buildMysqlIgnoreTableOptions($excludedTables, $conn, $dbName));
+    run("{{bin/mysqldump}} $dumpOptions $conn > {{current_path}}/var/backups/$filename");
 
     // download backup
     info("Downloading database backup: $filename");

@@ -228,6 +228,26 @@ dep deploy:assets
 
 You may alternatively use its alias `dep db:clone` for `dep db:pull`.
 
+#### Exclude tables from `db:pull`
+
+By default, `dep db:pull` with `mysql` dump mode excludes volatile Contao tables such as logs, search indexes and queues from the downloaded database dump if they exist in the remote database.
+
+You can configure the excluded tables in your deployment script:
+
+```php
+set('db_pull_excluded_tables', [
+    'tl_log',
+    'tl_search',
+    'tl_search_index',
+]);
+```
+
+To disable table exclusions, set an empty list:
+
+```php
+set('db_pull_excluded_tables', []);
+```
+
 #### What to do when `mysql` or `mysqldump` is unavailable
 
 You can change the pull and push commands to use the `contao:backup` commands instead of `mysql` and `mysqldump`:
