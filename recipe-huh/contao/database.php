@@ -242,6 +242,10 @@ task('db:pull:mysql', static function () {
     if (askConfirmation('Delete cloned database dump file locally?', false)) {
         runLocally("rm var/backups/$filename");
     }
+
+    if (askConfirmation('Run local database migrations now?', true)) {
+        runLocally('{{local/bin/contao-console}} contao:migrate --no-backup {{console_options}}', ['timeout' => null]);
+    }
 })->once();
 
 desc('Push the local database to remote.');
