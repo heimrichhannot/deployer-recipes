@@ -97,9 +97,9 @@ task('db:pull:contao', static function () {
 
 function fetchLocalDatabase(): string
 {
-    $matches = extractDatabaseFromIni('.env.local');
+    $matches = extractDatabaseFromEnv('.env.local');
     if (empty($matches)) {
-        $matches = extractDatabaseFromIni('.env');
+        $matches = extractDatabaseFromEnv('.env');
     }
     if (empty($matches)) {
         throw new \RuntimeException('No local database credentials found in local .env.local or .env');
@@ -111,13 +111,11 @@ function fetchLocalDatabase(): string
     return $connection;
 }
 
-function extractDatabaseFromIni(string $filepath): ?array
+function extractDatabaseFromEnv(string $filepath): ?array
 {
-    $env = \parse_ini_file($filepath);
-
     $regex = '/^mysql:\/\/(?P<user>[^:\/@]+)(?::(?P<pass>[^@]*))?@(?P<host>[^:\/]+)(?::(?P<port>[^\/]+))?\/(?P<db>.+)$/';
 //    $regex = '/mysql:\/\/(?P<user>[^:]+)(?::(?P<pass>[^@]+))?@(?P<host>[^:]+):(?P<port>[^\/]+)\/(?P<db>.+)/';
-    $url = $env['DATABASE_URL'] ?? null;
+    $url = extractEnvValue($filepath, 'DATABASE_URL');
 
     if (!$url) {
         return null;
@@ -126,6 +124,41 @@ function extractDatabaseFromIni(string $filepath): ?array
     \preg_match($regex, $url, $matches);
 
     return $matches;
+}
+
+function extractDatabaseFromIni(string $filepath): ?array
+{
+    return extractDatabaseFromEnv($filepath);
+}
+
+function extractEnvValue(string $filepath, string $name): ?string
+{
+    if (!\is_file($filepath)) {
+        return null;
+    }
+
+    $lines = \file($filepath, \FILE_IGNORE_NEW_LINES);
+
+    if (false === $lines) {
+        return null;
+    }
+
+    foreach ($lines as $line) {
+        if (!\preg_match('/^\s*(?:export\s+)?' . \preg_quote($name, '/') . '\s*=\s*(.*)\s*$/', $line, $matches)) {
+            continue;
+        }
+
+        $value = \trim($matches[1]);
+        $quote = $value[0] ?? null;
+
+        if (($quote === '"' || $quote === "'") && \str_ends_with($value, $quote)) {
+            $value = \substr($value, 1, -1);
+        }
+
+        return $value;
+    }
+
+    return null;
 }
 
 function databaseParamsToCliString(array $matches): ?string
@@ -193,7 +226,7 @@ task('db:pull:mysql', static function () {
     $absPath = run('readlink -f {{current_path}}/.env.local');
     download($absPath, 'var/tmp/.env.remote');
 
-    $matches = extractDatabaseFromIni('var/tmp/.env.remote');
+    $matches = extractDatabaseFromEnv('var/tmp/.env.remote');
 
     if ($matches === null) {
         throw new \RuntimeException('No remote database credentials found in .env.local of remote host');
@@ -327,9 +360,9 @@ task('db:push:contao', static function () {
 
 desc('Push the local database to remote with mysqldump and mysql.');
 task('db:push:mysql', static function () {
-    $matches = extractDatabaseFromIni('.env.local');
+    $matches = extractDatabaseFromEnv('.env.local');
     if (empty($matches)) {
-        $matches = extractDatabaseFromIni('.env');
+        $matches = extractDatabaseFromEnv('.env');
     }
     if (empty($matches)) {
         throw new \RuntimeException('No database credentials found in .env.local or .env');
@@ -350,7 +383,7 @@ task('db:push:mysql', static function () {
     $absPath = run('readlink -f {{current_path}}/.env.local');
     download($absPath, 'var/tmp/.env.remote');
 
-    $matches = extractDatabaseFromIni('var/tmp/.env.remote');
+    $matches = extractDatabaseFromEnv('var/tmp/.env.remote');
     $remoteConn = databaseParamsToCliString($matches);
     $dbName = $matches['db'];
 
@@ -387,9 +420,9 @@ task('db:push:mysql', static function () {
 
 desc('Import a local database backup with mysql');
 task('db:import:local', static function () {
-    $matches = extractDatabaseFromIni('.env.local');
+    $matches = extractDatabaseFromEnv('.env.local');
     if (empty($matches)) {
-        $matches = extractDatabaseFromIni('.env');
+        $matches = extractDatabaseFromEnv('.env');
     }
     if (empty($matches)) {
         throw new \RuntimeException('No database credentials found in .env.local or .env');
@@ -416,7 +449,7 @@ task('db:import:remote', static function () {
     $absPath = run('readlink -f {{current_path}}/.env.local');
     download($absPath, 'var/tmp/.env.remote');
 
-    $matches = extractDatabaseFromIni('var/tmp/.env.remote');
+    $matches = extractDatabaseFromEnv('var/tmp/.env.remote');
     $conn = databaseParamsToCliString($matches);
     $dbName = $matches['db'];
 
@@ -437,9 +470,9 @@ task('db:import:remote', static function () {
 
 desc('Export the local database with mysqldump');
 task('db:export:local', static function () {
-    $matches = extractDatabaseFromIni('.env.local');
+    $matches = extractDatabaseFromEnv('.env.local');
     if (empty($matches)) {
-        $matches = extractDatabaseFromIni('.env');
+        $matches = extractDatabaseFromEnv('.env');
     }
     if (empty($matches)) {
         throw new \RuntimeException('No database credentials found in .env.local or .env');
@@ -460,7 +493,7 @@ task('db:export:remote', static function () {
     $absPath = run('readlink -f {{current_path}}/.env.local');
     download($absPath, 'var/tmp/.env.remote');
 
-    $matches = extractDatabaseFromIni('var/tmp/.env.remote');
+    $matches = extractDatabaseFromEnv('var/tmp/.env.remote');
     $conn = databaseParamsToCliString($matches);
     $dbName = $matches['db'];
 
