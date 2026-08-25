@@ -209,6 +209,10 @@ dep cache:clear
 dep opcache:clear
 ```
 
+If the automatic request fails, for example because the website is protected by HTTP Basic Authentication,
+the task prints the temporary opcache-clear URL so it can be opened in an authenticated browser. It then asks
+whether the temporary file should be deleted.
+
 ### Deploy assets only (encore build folder)
 
 ```bash

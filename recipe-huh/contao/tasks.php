@@ -113,7 +113,18 @@ task('opcache:clear', function () {
 
     writeln('Execute cache clear file', OutputInterface::VERBOSITY_VERBOSE);
     $url = rtrim(parse('{{public_url}}'), '/').'/'.$tmpFileName;
-    $result = run("cd $path && curl -kL -A \"deployer/clear_opt_cache\" $url");
+    $result = run("cd $path && curl -kL -A \"deployer/clear_opt_cache\" $url", ['no_throw' => true]);
+
+    if (!in_array((int) $result, [1, 2], true)) {
+        warning('Failed to clear opcache automatically.');
+        writeln('Open the following URL in a browser to clear it manually:');
+        writeln($url);
+
+        if (!askConfirmation('Delete the temporary opcache clear file?', true)) {
+            warning('The temporary opcache clear file was not deleted.');
+            return;
+        }
+    }
 
     writeln('Remove tmp cache clear file', OutputInterface::VERBOSITY_VERBOSE);
     run("cd $path && rm $tmpFileName");
@@ -123,12 +134,9 @@ task('opcache:clear', function () {
         return;
     }
 
-    if (1 !== (int)$result) {
-        warning('Failed to clear opcache.');
-        return;
+    if (1 === (int)$result) {
+        info('Opcache cleared!');
     }
-
-    info('Opcache cleared!');
 });
 
 desc('Alias for opcache:clear');

@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '**'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out tagged revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          notes_file="${RUNNER_TEMP}/release-notes.md"
+
+          awk -v tag="${TAG}" '
+            function changelog_tag(line, closing_bracket) {
+              closing_bracket = index(line, "]")
+
+              if (closing_bracket == 0) {
+                return ""
+              }
+
+              return substr(line, 5, closing_bracket - 5)
+            }
+
+            /^## \[/ {
+              if (in_section) {
+                exit
+              }
+
+              if (tag != "Unreleased" && changelog_tag($0) == tag) {
+                in_section = 1
+              }
+
+              next
+            }
+
+            in_section {
+              lines[++line_count] = $0
+            }
+
+            END {
+              while (line_count > 0 && lines[line_count] == "") {
+                --line_count
+              }
+
+              for (line_number = 1; line_number <= line_count; ++line_number) {
+                print lines[line_number]
+              }
+            }
+          ' CHANGELOG.md > "${notes_file}"
+
+          if existing_notes="$(gh release view "${TAG}" --json body --jq '.body')"; then
+            if [[ -n "${existing_notes}" ]]; then
+              echo "Release ${TAG} already has notes; leaving it unchanged."
+            elif [[ -s "${notes_file}" ]]; then
+              gh release edit "${TAG}" --notes-file "${notes_file}"
+            else
+              echo "Release ${TAG} has no notes and no matching changelog section."
+            fi
+
+            exit 0
+          fi
+
+          gh release create "${TAG}" --title "${TAG}" --notes-file "${notes_file}"
