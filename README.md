@@ -35,8 +35,8 @@ host('www.example.org')
     ->set('public_url', 'https://www.example.org')
     ->set('http_user', 'www_data')
     ->set('public_dir', 'public')
-    ->set('deploy_path', '/usr/www/users/{{remote_user}}/docroot')
-    ->set('bin/php', 'php82')
+    ->set('deploy_path', '/usr/www/users/{{remote_user}}/contao/2026/production')
+    ->set('bin/php', 'php84')
     ->set('release_name', fn() => date('y-m-d_H-i-s'))
     /** In case ACL is unavailable, use chmod instead */
     // ->set('writable_mode', 'chmod')
@@ -61,6 +61,7 @@ set('shared_dirs', [
     # 'files/social-feed',
     '{{public_path}}/share',
     'var/backups',
+    'var/job-attachments',
     'var/logs',
 ]);
 
