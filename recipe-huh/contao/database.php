@@ -113,8 +113,7 @@ function fetchLocalDatabase(): string
 
 function extractDatabaseFromEnv(string $filepath): ?array
 {
-    $regex = '/^mysql:\/\/(?P<user>[^:\/@]+)(?::(?P<pass>[^@]*))?@(?P<host>[^:\/]+)(?::(?P<port>[^\/]+))?\/(?P<db>.+)$/';
-//    $regex = '/mysql:\/\/(?P<user>[^:]+)(?::(?P<pass>[^@]+))?@(?P<host>[^:]+):(?P<port>[^\/]+)\/(?P<db>.+)/';
+    $regex = '/^mysql:\/\/(?P<user>[^:\/@]+)(?::(?P<pass>[^@]*))?@(?P<host>[^:\/]+)(?::(?P<port>[^\/]+))?\/(?P<db>[^?#]+)(?:\?[^#]*)?(?:#.*)?$/';
     $url = extractEnvValue($filepath, 'DATABASE_URL');
 
     if (!$url) {
