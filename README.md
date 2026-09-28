@@ -3,8 +3,10 @@ Deployer recipes used at [Heimrich & Hannot GmbH](https://www.heimrich-hannot.de
 
 ## Requirements
 
-- [Deployer](https://deployer.org/) 8
 - PHP 8.3 or later in the environment you run `dep` in (e.g. your ddev web container)
+
+Deployer is bundled with this package (see [Bundled Deployer](#bundled-deployer)),
+so its dependencies never conflict with your project's.
 
 Projects that cannot use PHP 8.3 yet can stay on version 1.15 of this package, which uses Deployer 7:
 ```shell
@@ -17,15 +19,36 @@ composer require --dev heimrichhannot/deployer-recipes:~1.15.0
 
 ## Install
 
-To use our recipes, require this package with composer.
 ```shell
 composer require --dev heimrichhannot/deployer-recipes
 ```
 
-It is _not_ required to install [Deployer](https://deployer.org/) separately, but you may do so with the following command.
+This installs Deployer as `vendor/bin/dep`:
 ```shell
-composer require --dev deployer/deployer
+php vendor/bin/dep deploy production
 ```
+
+Do not require `deployer/deployer` alongside this package; the two conflict.
+When upgrading from a version that used it, remove it first:
+```shell
+composer remove --dev deployer/deployer
+```
+
+## Bundled Deployer
+
+This package ships the official Deployer phar, verified against the Deployer sign key.
+The bundled version is recorded in `composer.json` under `extra.deployer.version`; `vendor/bin/dep --version` prints it.
+
+A scheduled workflow bundles new Deployer releases:
+
+| Deployer release        | Release of this package                  |
+|-------------------------|------------------------------------------|
+| patch (8.0.5 → 8.0.6)   | patch, released automatically            |
+| minor (8.0.x → 8.1.0)   | minor, released automatically            |
+| major (8 → 9)           | new major, prepared as a pull request    |
+
+The recipes refuse to run under a Deployer major version other than the bundled one.
+If you see "requires Deployer 8, but was loaded by Deployer …", run `vendor/bin/dep` instead of a globally installed `dep`.
 
 ## Usage with Contao 4.13+
 

@@ -4,9 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Bundle the Deployer 8.0.5 phar and expose it as `vendor/bin/dep` (see "Bundled Deployer" in the README).
+- Refuse to run under a Deployer major version other than the bundled one, with a hint to use `vendor/bin/dep`.
+- Scheduled workflow that bundles new Deployer releases and releases them automatically; Deployer majors arrive as a pull request.
+- CI with unit, smoke and signature tests.
+
 ### Changed
 
-- Require Deployer 8 (`deployer/deployer: ^8.0`) and PHP 8.3 or later.
+- **Upgrade:** `deployer/deployer` is no longer a dependency and now conflicts with this package.
+  Run `composer remove --dev deployer/deployer` before updating if your project requires it directly; `deploy.php` stays unchanged.
+  Use `vendor/bin/dep` instead of a globally installed `dep`.
+- Require PHP 8.3 or later. Projects no longer need Symfony 7.4 or later, so Contao 4.13 and 5.3 projects can install this package.
   Projects on older PHP versions can stay on `~1.15.0`, which uses Deployer 7.
 - Converted `run()`/`runLocally()` option arrays to named arguments, as required by Deployer 8.
 - Database imports and restores (`db:pull`, `db:push`, `db:import:*`) and the local migration after `db:pull` run without a timeout again;
