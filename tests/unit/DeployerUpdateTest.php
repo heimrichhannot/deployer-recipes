@@ -60,17 +60,10 @@ final class DeployerUpdateTest extends TestCase
         DeployerUpdate::nextRecipesVersion('2.3.1', '8.0.5', '8.0.5');
     }
 
-    public function testUnreleasedIsEmpty(): void
+    public function testLatestRecipesTagPicksNewestTagInRecipesMajor(): void
     {
-        self::assertTrue(DeployerUpdate::unreleasedIsEmpty(self::CHANGELOG_HEAD . "## [Unreleased]\n\n## [2.0.0] - 2026-10-01\n\n- x\n"));
-        self::assertTrue(DeployerUpdate::unreleasedIsEmpty(self::CHANGELOG_HEAD . "## [Unreleased]\n"));
-        self::assertFalse(DeployerUpdate::unreleasedIsEmpty(self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Fixed\n\n- y\n\n## [2.0.0] - 2026-10-01\n"));
-    }
-
-    public function testChangelogWithoutUnreleasedHeadingIsRejected(): void
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        DeployerUpdate::unreleasedIsEmpty("# Changelog\n\n## [2.0.0] - 2026-10-01\n");
+        self::assertSame('2.1.0', DeployerUpdate::latestRecipesTag(['1.15.0', '2.0.0', '2.1.0', '3.0.0-rc.1', 'v2.0.9'], 2));
+        self::assertNull(DeployerUpdate::latestRecipesTag(['1.15.0'], 2));
     }
 
     public function testInsertReleaseBelowEmptyUnreleased(): void
@@ -95,10 +88,34 @@ final class DeployerUpdateTest extends TestCase
         );
     }
 
-    public function testInsertReleaseRefusesNonEmptyUnreleased(): void
+    public function testInsertReleaseLeavesUnreleasedContentAlone(): void
     {
-        $this->expectException(\LogicException::class);
-        DeployerUpdate::insertRelease(self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Fixed\n\n- y\n", '2.3.2', '2026-10-05', '8.0.6');
+        self::assertSame(
+            self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Fixed\n\n- y\n\n"
+            . "## [2.3.2] - 2026-10-05\n\n### Changed\n\n"
+            . "- Bundle Deployer 8.0.6 ([release notes](https://github.com/deployphp/deployer/releases/tag/v8.0.6)).\n\n"
+            . "## [2.3.1] - 2026-10-01\n",
+            DeployerUpdate::insertRelease(self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Fixed\n\n- y\n\n## [2.3.1] - 2026-10-01\n", '2.3.2', '2026-10-05', '8.0.6'),
+        );
+    }
+
+    public function testInsertReleaseWithoutUnreleasedHeadingGoesAboveNewestRelease(): void
+    {
+        self::assertSame(
+            self::CHANGELOG_HEAD . "## [2.3.2] - 2026-10-05\n\n### Changed\n\n"
+            . "- Bundle Deployer 8.0.6 ([release notes](https://github.com/deployphp/deployer/releases/tag/v8.0.6)).\n\n"
+            . "## [2.3.1] - 2026-10-01\n\n- y\n",
+            DeployerUpdate::insertRelease(self::CHANGELOG_HEAD . "## [2.3.1] - 2026-10-01\n\n- y\n", '2.3.2', '2026-10-05', '8.0.6'),
+        );
+    }
+
+    public function testInsertReleaseIntoChangelogWithoutSections(): void
+    {
+        self::assertSame(
+            self::CHANGELOG_HEAD . "## [2.0.1] - 2026-10-05\n\n### Changed\n\n"
+            . "- Bundle Deployer 8.0.6 ([release notes](https://github.com/deployphp/deployer/releases/tag/v8.0.6)).\n",
+            DeployerUpdate::insertRelease(self::CHANGELOG_HEAD, '2.0.1', '2026-10-05', '8.0.6'),
+        );
     }
 
     public function testAddUnreleasedEntryPrependsToExistingChangedList(): void
@@ -125,6 +142,16 @@ final class DeployerUpdateTest extends TestCase
         );
     }
 
+    public function testAddUnreleasedEntryCreatesMissingUnreleasedHeading(): void
+    {
+        self::assertSame(
+            self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Changed\n\n"
+            . "- Bundle Deployer 9.0.0 ([release notes](https://github.com/deployphp/deployer/releases/tag/v9.0.0)).\n\n"
+            . "## [2.3.1] - 2026-10-01\n",
+            DeployerUpdate::addUnreleasedEntry(self::CHANGELOG_HEAD . "## [2.3.1] - 2026-10-01\n", '9.0.0'),
+        );
+    }
+
     public function testAddUnreleasedEntryToEmptyUnreleased(): void
     {
         self::assertSame(
@@ -137,41 +164,42 @@ final class DeployerUpdateTest extends TestCase
 
     public function testPlanReleasesSameMajorUpdate(): void
     {
-        $plan = DeployerUpdate::plan('8.0.5', 2, ['v8.0.6', 'v8.0.5', 'v7.5.12'], ['1.15.0', '2.0.0'], self::CHANGELOG_HEAD . "## [Unreleased]\n\n## [2.0.0] - 2026-10-01\n");
+        $plan = DeployerUpdate::plan('8.0.5', 2, ['v8.0.6', 'v8.0.5', 'v7.5.12'], ['1.15.0', '2.0.0'], 0);
 
         self::assertSame(
-            ['mode' => 'release', 'current' => '8.0.5', 'same_major' => '8.0.6', 'next_major' => '', 'recipes_version' => '2.0.1', 'next_recipes_major' => '3'],
+            ['mode' => 'release', 'current' => '8.0.5', 'same_major' => '8.0.6', 'next_major' => '', 'latest_tag' => '2.0.0', 'recipes_version' => '2.0.1', 'next_recipes_major' => '3'],
             $plan,
         );
     }
 
     public function testPlanIgnoresOlderAndEqualReleases(): void
     {
-        $plan = DeployerUpdate::plan('8.0.5', 2, ['v8.0.5', 'v8.0.4'], ['2.0.0'], self::CHANGELOG_HEAD . "## [Unreleased]\n");
+        $plan = DeployerUpdate::plan('8.0.5', 2, ['v8.0.5', 'v8.0.4'], ['2.0.0'], 0);
 
         self::assertSame('none', $plan['mode']);
         self::assertSame('', $plan['same_major']);
     }
 
-    public function testPlanOpensPullRequestWhenUnreleasedHasContent(): void
+    public function testPlanOpensPullRequestWhenMainHasCommitsSinceLatestTag(): void
     {
-        $plan = DeployerUpdate::plan('8.0.5', 2, ['v8.0.6'], ['2.0.0'], self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Fixed\n\n- y\n");
+        $plan = DeployerUpdate::plan('8.0.5', 2, ['v8.0.6'], ['2.0.0'], 3);
 
         self::assertSame('pr', $plan['mode']);
         self::assertSame('8.0.6', $plan['same_major']);
+        self::assertSame('2.0.0', $plan['latest_tag']);
         self::assertSame('', $plan['recipes_version']);
     }
 
     public function testPlanWaitsForFirstTagInRecipesMajor(): void
     {
-        $plan = DeployerUpdate::plan('8.0.5', 2, ['v8.0.6'], ['1.15.0'], self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Changed\n\n- v2 work\n");
+        $plan = DeployerUpdate::plan('8.0.5', 2, ['v8.0.6'], ['1.15.0'], 0);
 
         self::assertSame('untagged', $plan['mode']);
     }
 
     public function testPlanReportsNextMajorAlongsideSameMajorUpdate(): void
     {
-        $plan = DeployerUpdate::plan('8.0.5', 2, ['v9.0.1', 'v9.0.0', 'v8.0.6'], ['2.0.0'], self::CHANGELOG_HEAD . "## [Unreleased]\n");
+        $plan = DeployerUpdate::plan('8.0.5', 2, ['v9.0.1', 'v9.0.0', 'v8.0.6'], ['2.0.0'], 0);
 
         self::assertSame('release', $plan['mode']);
         self::assertSame('8.0.6', $plan['same_major']);

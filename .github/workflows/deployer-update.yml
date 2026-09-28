@@ -29,6 +29,7 @@ jobs:
       mode: ${{ steps.plan.outputs.mode }}
       same_major: ${{ steps.plan.outputs.same_major }}
       next_major: ${{ steps.plan.outputs.next_major }}
+      latest_tag: ${{ steps.plan.outputs.latest_tag }}
       recipes_version: ${{ steps.plan.outputs.recipes_version }}
       next_recipes_major: ${{ steps.plan.outputs.next_recipes_major }}
 
@@ -36,7 +37,7 @@ jobs:
       - name: Check out
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # the plan needs this repository's tags
+          fetch-depth: 0 # the plan needs this repository's tags and history
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -64,6 +65,7 @@ jobs:
     env:
       MODE: ${{ needs.plan.outputs.mode }}
       NEW_DEPLOYER: ${{ needs.plan.outputs.same_major }}
+      LATEST_TAG: ${{ needs.plan.outputs.latest_tag }}
       RECIPES_VERSION: ${{ needs.plan.outputs.recipes_version }}
       GH_TOKEN: ${{ github.token }}
 
@@ -117,7 +119,7 @@ jobs:
           {
             echo "Deployer $NEW_DEPLOYER was released ([release notes](https://github.com/deployphp/deployer/releases/tag/v$NEW_DEPLOYER))."
             echo
-            echo "It was not released automatically because \`[Unreleased]\` in CHANGELOG.md has unreleased changes,"
+            echo "It was not released automatically because main has commits since $LATEST_TAG that are not released yet,"
             echo 'so the version number has to be chosen by hand. Merge this pull request, then release as usual.'
             echo
             echo 'CI does not run on pull requests opened by this workflow; the smoke test passed in the workflow run.'

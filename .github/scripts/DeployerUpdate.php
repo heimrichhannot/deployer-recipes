@@ -71,11 +71,10 @@ final class DeployerUpdate
         return $minorChanged ? "$major." . ($minor + 1) . '.0' : "$major.$minor." . ($patch + 1);
     }
 
-    public static function unreleasedIsEmpty(string $changelog): bool
+    /** @param list<string> $recipesTags tags of this repository */
+    public static function latestRecipesTag(array $recipesTags, int $recipesMajor): ?string
     {
-        [, $body] = self::splitUnreleased($changelog);
-
-        return \trim($body) === '';
+        return self::latestInMajor(self::stableVersions($recipesTags), $recipesMajor);
     }
 
     public static function bundleLine(string $deployerVersion): string
@@ -83,22 +82,25 @@ final class DeployerUpdate
         return \sprintf('- Bundle Deployer %1$s ([release notes](https://github.com/deployphp/deployer/releases/tag/v%1$s)).', $deployerVersion);
     }
 
-    /** Adds a release section below an empty [Unreleased] section. */
+    /**
+     * Adds a release section below the [Unreleased] section, whatever it holds,
+     * or above the newest release if there is no [Unreleased] heading.
+     */
     public static function insertRelease(string $changelog, string $version, string $date, string $deployerVersion): string
     {
-        [$before, $body, $after] = self::splitUnreleased($changelog);
-        if (\trim($body) !== '') {
-            throw new \LogicException('[Unreleased] is not empty; release it by hand.');
-        }
+        $unreleased = \strpos($changelog, self::UNRELEASED);
+        $offset = self::nextSection($changelog, $unreleased === false ? 0 : $unreleased + \strlen(self::UNRELEASED));
 
-        $section = "## [$version] - $date\n\n### Changed\n\n" . self::bundleLine($deployerVersion) . "\n";
-
-        return $before . "\n\n" . $section . ($after === '' ? '' : "\n" . $after);
+        return self::insertSection($changelog, $offset, "## [$version] - $date\n\n### Changed\n\n" . self::bundleLine($deployerVersion) . "\n");
     }
 
-    /** Adds the bundle line to the "### Changed" list of [Unreleased], creating that list if needed. */
+    /** Adds the bundle line to the "### Changed" list of [Unreleased], creating the heading and list if needed. */
     public static function addUnreleasedEntry(string $changelog, string $deployerVersion): string
     {
+        if (!\str_contains($changelog, self::UNRELEASED)) {
+            $changelog = self::insertSection($changelog, self::nextSection($changelog, 0), self::UNRELEASED . "\n");
+        }
+
         [$before, $body, $after] = self::splitUnreleased($changelog);
         $line = self::bundleLine($deployerVersion);
 
@@ -117,11 +119,13 @@ final class DeployerUpdate
      * @param list<string> $upstreamTags deployphp/deployer release tags
      * @param list<string> $recipesTags  tags of this repository
      *
-     * @return array{mode: string, current: string, same_major: string, next_major: string, recipes_version: string, next_recipes_major: string}
+     * @param int          $unreleasedCommits commits on main since the latest recipes tag (latest_tag)
+     *
+     * @return array{mode: string, current: string, same_major: string, next_major: string, latest_tag: string, recipes_version: string, next_recipes_major: string}
      *   mode: "none" (no same-major update), "untagged" (no release in this recipes major yet),
-     *   "pr" ([Unreleased] not empty) or "release"
+     *   "pr" (main has commits that are not released yet) or "release"
      */
-    public static function plan(string $currentDeployer, int $recipesMajor, array $upstreamTags, array $recipesTags, string $changelog): array
+    public static function plan(string $currentDeployer, int $recipesMajor, array $upstreamTags, array $recipesTags, int $unreleasedCommits): array
     {
         $upstream = self::stableVersions($upstreamTags);
         $deployerMajor = self::major($currentDeployer);
@@ -130,12 +134,12 @@ final class DeployerUpdate
         if ($sameMajor !== null && !\version_compare($sameMajor, $currentDeployer, '>')) {
             $sameMajor = null;
         }
-        $latestRecipesTag = self::latestInMajor(self::stableVersions($recipesTags), $recipesMajor);
+        $latestRecipesTag = self::latestRecipesTag($recipesTags, $recipesMajor);
 
         $mode = match (true) {
             $sameMajor === null => 'none',
             $latestRecipesTag === null => 'untagged',
-            !self::unreleasedIsEmpty($changelog) => 'pr',
+            $unreleasedCommits > 0 => 'pr',
             default => 'release',
         };
 
@@ -144,6 +148,7 @@ final class DeployerUpdate
             'current' => $currentDeployer,
             'same_major' => $sameMajor ?? '',
             'next_major' => self::latestAboveMajor($upstream, $deployerMajor) ?? '',
+            'latest_tag' => $latestRecipesTag ?? '',
             'recipes_version' => $mode === 'release' ? self::nextRecipesVersion($latestRecipesTag, $currentDeployer, $sameMajor) : '',
             'next_recipes_major' => (string) ($recipesMajor + 1),
         ];
@@ -161,5 +166,21 @@ final class DeployerUpdate
         $bodyEnd = $next === false ? \strlen($changelog) : $next + 1;
 
         return [\substr($changelog, 0, $headingEnd), \substr($changelog, $headingEnd, $bodyEnd - $headingEnd), \substr($changelog, $bodyEnd)];
+    }
+
+    /** Offset of the next "## " heading line after $from, or the end of the changelog. */
+    private static function nextSection(string $changelog, int $from): int
+    {
+        $next = \strpos($changelog, "\n## ", $from);
+
+        return $next === false ? \strlen($changelog) : $next + 1;
+    }
+
+    /** Inserts $section at $offset, separated from its neighbours by one blank line. */
+    private static function insertSection(string $changelog, int $offset, string $section): string
+    {
+        $after = \substr($changelog, $offset);
+
+        return \rtrim(\substr($changelog, 0, $offset), "\n") . "\n\n" . $section . ($after === '' ? '' : "\n" . $after);
     }
 }

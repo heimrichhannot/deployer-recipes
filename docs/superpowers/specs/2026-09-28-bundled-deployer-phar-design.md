@@ -156,12 +156,14 @@ update is never pushed.
 
 1. **Tag guard:** find the latest tag matching `<recipes-major>.*.*` (tags have no `v` prefix). If none exists,
    skip with a notice. This prevents anything happening before `2.0.0` has been tagged by hand.
-2. **Unreleased guard:** if the `## [Unreleased]` section of `CHANGELOG.md` has any content, humans have merged
-   unreleased changes and the bump level can't be inferred. Instead of releasing, push the update to branch
-   `deployer/<major>` (e.g. `deployer/8`) and open or update a PR, with the same idempotent handling as the
-   major path (step 4b), then stop the auto path.
+2. **Unreleased-commits guard:** if `main` has commits since that tag (`git rev-list --count <tag>..HEAD`),
+   humans have merged changes that aren't released yet and the bump level can't be inferred. Instead of
+   releasing, push the update to branch `deployer/<major>` (e.g. `deployer/8`) and open or update a PR, with the
+   same idempotent handling as the major path (step 4b), then stop the auto path. The workflow never reads
+   `CHANGELOG.md` to decide anything. (Amended after implementation; this replaced a guard on the content of
+   `## [Unreleased]`.)
 3. **Version:** a Deployer patch change → recipes patch bump; a Deployer minor change → recipes minor bump.
-4. **CHANGELOG:** insert below `## [Unreleased]`:
+4. **CHANGELOG:** insert below `## [Unreleased]`, or above the newest release if that heading is missing:
 
    ```markdown
    ## [2.3.2] - 2026-10-01

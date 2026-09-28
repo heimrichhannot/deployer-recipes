@@ -47,6 +47,9 @@ A scheduled workflow bundles new Deployer releases:
 | minor (8.0.x → 8.1.0)   | minor, released automatically            |
 | major (8 → 9)           | new major, prepared as a pull request    |
 
+If `main` has commits that are not part of the latest release, patch and minor updates arrive as a pull request
+instead, so the version number can be chosen by hand.
+
 The recipes refuse to run under a Deployer major version other than the bundled one.
 If you see "requires Deployer 8, but was loaded by Deployer …", run `vendor/bin/dep` instead of a globally installed `dep`.
 

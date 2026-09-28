@@ -27,6 +27,19 @@ git checkout --quiet CHANGELOG.md
 php "$cli" unreleased-changelog 9.0.0
 check 'unreleased-changelog adds the entry' 'grep -q "^- Bundle Deployer 9.0.0 " CHANGELOG.md'
 
+git checkout --quiet CHANGELOG.md
+echo fix > fix.txt && git add fix.txt && git commit --quiet -m "Unreleased fix"
+plan="$(printf 'v8.0.6\n' | php "$cli" plan)"
+check 'plan opens a PR when main has commits since the latest tag' 'grep -qx "mode=pr" <<<"$plan" && grep -qx "latest_tag=2.0.0" <<<"$plan"'
+git tag 2.0.1
+
+printf '# Changelog\n\n## [2.0.1] - 2026-10-02\n\n- y\n' > CHANGELOG.md
+git commit --quiet -am "Release without [Unreleased] heading" && git tag -f 2.0.1 > /dev/null
+plan="$(printf 'v8.0.6\n' | php "$cli" plan)"
+check 'plan ignores the CHANGELOG' 'grep -qx "mode=release" <<<"$plan" && grep -qx "recipes_version=2.0.2" <<<"$plan"'
+php "$cli" release-changelog 2.0.2 8.0.6
+check 'release-changelog works without an [Unreleased] heading' 'grep -qx "## \[2.0.2\] - $(date -u +%F)" CHANGELOG.md'
+
 check 'unknown command exits 2' '[ "$(php "$cli" bogus 2>/dev/null; echo $?)" = 2 ]'
 
 rm -rf .git
