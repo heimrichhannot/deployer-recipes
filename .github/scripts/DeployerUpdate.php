@@ -1,0 +1,165 @@
+<?php
+
+namespace HeimrichHannot\DeployerRecipes\Ci;
+
+/**
+ * Pure decision logic for the Deployer update workflow. No I/O; see deployer-update.php for the CLI.
+ */
+final class DeployerUpdate
+{
+    private const UNRELEASED = '## [Unreleased]';
+
+    /**
+     * @param list<string> $tags e.g. ["v8.0.5", "v8.1.0-rc.1", "8.0.4"]
+     *
+     * @return list<string> strict X.Y.Z versions without "v" prefix, ascending
+     */
+    public static function stableVersions(array $tags): array
+    {
+        $versions = [];
+        foreach ($tags as $tag) {
+            if (\preg_match('/^v?(\d+\.\d+\.\d+)$/', \trim($tag), $match)) {
+                $versions[$match[1]] = true;
+            }
+        }
+        $versions = \array_keys($versions);
+        \usort($versions, 'version_compare');
+
+        return $versions;
+    }
+
+    public static function major(string $version): int
+    {
+        if (!\preg_match('/^v?(\d+)\./', $version, $match)) {
+            throw new \InvalidArgumentException(\sprintf('Not a version: "%s"', $version));
+        }
+
+        return (int) $match[1];
+    }
+
+    /** @param list<string> $versions ascending, as returned by stableVersions() */
+    public static function latestInMajor(array $versions, int $major): ?string
+    {
+        $inMajor = \array_filter($versions, static fn (string $v): bool => self::major($v) === $major);
+
+        return $inMajor === [] ? null : \end($inMajor);
+    }
+
+    /** @param list<string> $versions ascending, as returned by stableVersions() */
+    public static function latestAboveMajor(array $versions, int $major): ?string
+    {
+        $above = \array_filter($versions, static fn (string $v): bool => self::major($v) > $major);
+
+        return $above === [] ? null : \end($above);
+    }
+
+    /**
+     * Deployer patch release → recipes patch bump; Deployer minor release → recipes minor bump.
+     */
+    public static function nextRecipesVersion(string $latestRecipesTag, string $currentDeployer, string $newDeployer): string
+    {
+        if (self::major($currentDeployer) !== self::major($newDeployer)) {
+            throw new \InvalidArgumentException('Deployer major changes need a pull request, not an automatic release.');
+        }
+        if (!\version_compare($newDeployer, $currentDeployer, '>')) {
+            throw new \InvalidArgumentException(\sprintf('Deployer %s is not newer than %s.', $newDeployer, $currentDeployer));
+        }
+
+        [$major, $minor, $patch] = \array_map('intval', \explode('.', self::stableVersions([$latestRecipesTag])[0] ?? throw new \InvalidArgumentException(\sprintf('Not a version: "%s"', $latestRecipesTag))));
+        $minorChanged = \explode('.', $currentDeployer)[1] !== \explode('.', $newDeployer)[1];
+
+        return $minorChanged ? "$major." . ($minor + 1) . '.0' : "$major.$minor." . ($patch + 1);
+    }
+
+    public static function unreleasedIsEmpty(string $changelog): bool
+    {
+        [, $body] = self::splitUnreleased($changelog);
+
+        return \trim($body) === '';
+    }
+
+    public static function bundleLine(string $deployerVersion): string
+    {
+        return \sprintf('- Bundle Deployer %1$s ([release notes](https://github.com/deployphp/deployer/releases/tag/v%1$s)).', $deployerVersion);
+    }
+
+    /** Adds a release section below an empty [Unreleased] section. */
+    public static function insertRelease(string $changelog, string $version, string $date, string $deployerVersion): string
+    {
+        [$before, $body, $after] = self::splitUnreleased($changelog);
+        if (\trim($body) !== '') {
+            throw new \LogicException('[Unreleased] is not empty; release it by hand.');
+        }
+
+        $section = "## [$version] - $date\n\n### Changed\n\n" . self::bundleLine($deployerVersion) . "\n";
+
+        return $before . "\n\n" . $section . ($after === '' ? '' : "\n" . $after);
+    }
+
+    /** Adds the bundle line to the "### Changed" list of [Unreleased], creating that list if needed. */
+    public static function addUnreleasedEntry(string $changelog, string $deployerVersion): string
+    {
+        [$before, $body, $after] = self::splitUnreleased($changelog);
+        $line = self::bundleLine($deployerVersion);
+
+        if (\preg_match('/^### Changed\n\n/m', $body)) {
+            $body = \preg_replace('/^### Changed\n\n/m', "### Changed\n\n$line\n", $body, 1);
+        } else {
+            $body = "\n\n### Changed\n\n$line\n" . (\trim($body) === '' ? '' : "\n" . \ltrim($body, "\n"));
+        }
+
+        $body = \rtrim($body, "\n") . "\n";
+
+        return $before . $body . ($after === '' ? '' : "\n" . $after);
+    }
+
+    /**
+     * @param list<string> $upstreamTags deployphp/deployer release tags
+     * @param list<string> $recipesTags  tags of this repository
+     *
+     * @return array{mode: string, current: string, same_major: string, next_major: string, recipes_version: string, next_recipes_major: string}
+     *   mode: "none" (no same-major update), "untagged" (no release in this recipes major yet),
+     *   "pr" ([Unreleased] not empty) or "release"
+     */
+    public static function plan(string $currentDeployer, int $recipesMajor, array $upstreamTags, array $recipesTags, string $changelog): array
+    {
+        $upstream = self::stableVersions($upstreamTags);
+        $deployerMajor = self::major($currentDeployer);
+
+        $sameMajor = self::latestInMajor($upstream, $deployerMajor);
+        if ($sameMajor !== null && !\version_compare($sameMajor, $currentDeployer, '>')) {
+            $sameMajor = null;
+        }
+        $latestRecipesTag = self::latestInMajor(self::stableVersions($recipesTags), $recipesMajor);
+
+        $mode = match (true) {
+            $sameMajor === null => 'none',
+            $latestRecipesTag === null => 'untagged',
+            !self::unreleasedIsEmpty($changelog) => 'pr',
+            default => 'release',
+        };
+
+        return [
+            'mode' => $mode,
+            'current' => $currentDeployer,
+            'same_major' => $sameMajor ?? '',
+            'next_major' => self::latestAboveMajor($upstream, $deployerMajor) ?? '',
+            'recipes_version' => $mode === 'release' ? self::nextRecipesVersion($latestRecipesTag, $currentDeployer, $sameMajor) : '',
+            'next_recipes_major' => (string) ($recipesMajor + 1),
+        ];
+    }
+
+    /** @return array{string, string, string} text up to and including the heading, the section body, the rest starting at the next "## " */
+    private static function splitUnreleased(string $changelog): array
+    {
+        $start = \strpos($changelog, self::UNRELEASED);
+        if ($start === false) {
+            throw new \InvalidArgumentException('CHANGELOG has no "## [Unreleased]" heading.');
+        }
+        $headingEnd = $start + \strlen(self::UNRELEASED);
+        $next = \strpos($changelog, "\n## ", $headingEnd);
+        $bodyEnd = $next === false ? \strlen($changelog) : $next + 1;
+
+        return [\substr($changelog, 0, $headingEnd), \substr($changelog, $headingEnd, $bodyEnd - $headingEnd), \substr($changelog, $bodyEnd)];
+    }
+}
