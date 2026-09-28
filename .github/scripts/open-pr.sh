@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Usage: open-pr.sh <branch> <deployer-version> <draft: true|false> <body-file>
-# Commits the working tree to <branch>, force-pushes it and opens or updates its pull request against main.
+# Usage: open-pr.sh <branch> <deployer-version> <draft: true|false> <body-file> <base-branch>
+# Commits the working tree to <branch>, force-pushes it and opens or updates its pull request against <base-branch>.
 # Does nothing if <branch> on origin already bundles <deployer-version>, so daily runs don't churn the PR.
 # Never force-pushes over commits made by anyone else (e.g. recipe fixes on a Deployer major branch);
-# comments on the open pull request once per version instead. Needs full history of main.
+# comments on the open pull request once per version instead. Needs full history of <base-branch>.
 set -euo pipefail
 
-branch=$1 version=$2 draft=$3 body_file=$4
+branch=$1 version=$2 draft=$3 body_file=$4 base=$5
 title="Bundle Deployer $version"
 
 bundled_version() {
@@ -24,7 +24,7 @@ if git fetch --quiet origin "refs/heads/$branch" 2>/dev/null; then
         exit 0
     fi
 
-    git fetch --quiet origin refs/heads/main
+    git fetch --quiet origin "refs/heads/$base"
     self="$(git var GIT_AUTHOR_IDENT | sed -E 's/^.*<([^>]*)>.*$/\1/')"
     if git log --format=%ae "FETCH_HEAD..$remote" | grep -qvxF "$self"; then
         echo "$branch has commits by others; not replacing it with Deployer $version." >&2
@@ -45,7 +45,7 @@ number="$(open_pr_number)"
 if [ -n "$number" ]; then
     gh pr edit "$number" --title "$title" --body-file "$body_file"
 else
-    args=(--base main --head "$branch" --title "$title" --body-file "$body_file")
+    args=(--base "$base" --head "$branch" --title "$title" --body-file "$body_file")
     if [ "$draft" = true ]; then
         args+=(--draft)
     fi

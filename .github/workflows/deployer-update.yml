@@ -19,8 +19,10 @@ permissions:
   pull-requests: write
 
 env:
-  # Commits, tags, pushes, pull requests and releases only happen for real runs on main.
-  PUBLISH: ${{ github.ref == 'refs/heads/main' && !inputs.dry_run }}
+  # The repository's default branch, whatever it is called; scheduled runs always run on it
+  DEFAULT_BRANCH: ${{ github.event.repository.default_branch || github.ref_name }}
+  # Commits, tags, pushes, pull requests and releases only happen for real runs on the default branch.
+  PUBLISH: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch || github.ref_name) && !inputs.dry_run }}
 
 jobs:
   plan:
@@ -73,7 +75,7 @@ jobs:
       - name: Check out
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # open-pr.sh compares the PR branch with main's history
+          fetch-depth: 0 # open-pr.sh compares the PR branch with the default branch's history
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -110,7 +112,7 @@ jobs:
         run: |
           git commit --quiet -am "Bundle Deployer $NEW_DEPLOYER"
           git tag "$RECIPES_VERSION"
-          git push --atomic origin HEAD:main "refs/tags/$RECIPES_VERSION"
+          git push --atomic origin "HEAD:refs/heads/$DEFAULT_BRANCH" "refs/tags/$RECIPES_VERSION"
           echo "tag=$RECIPES_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Open pull request
@@ -119,12 +121,12 @@ jobs:
           {
             echo "Deployer $NEW_DEPLOYER was released ([release notes](https://github.com/deployphp/deployer/releases/tag/v$NEW_DEPLOYER))."
             echo
-            echo "It was not released automatically because main has commits since $LATEST_TAG that are not released yet,"
+            echo "It was not released automatically because $DEFAULT_BRANCH has commits since $LATEST_TAG that are not released yet,"
             echo 'so the version number has to be chosen by hand. Merge this pull request, then release as usual.'
             echo
             echo 'CI does not run on pull requests opened by this workflow; the smoke test passed in the workflow run.'
           } > "$RUNNER_TEMP/pr-body.md"
-          .github/scripts/open-pr.sh "deployer/${NEW_DEPLOYER%%.*}" "$NEW_DEPLOYER" false "$RUNNER_TEMP/pr-body.md"
+          .github/scripts/open-pr.sh "deployer/${NEW_DEPLOYER%%.*}" "$NEW_DEPLOYER" false "$RUNNER_TEMP/pr-body.md" "$DEFAULT_BRANCH"
 
   next-major:
     needs: plan
@@ -139,7 +141,7 @@ jobs:
       - name: Check out
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # open-pr.sh compares the PR branch with main's history
+          fetch-depth: 0 # open-pr.sh compares the PR branch with the default branch's history
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -150,7 +152,7 @@ jobs:
         run: |
           .github/scripts/fetch-phar.sh "$NEW_DEPLOYER" bin
           composer config extra.deployer.version "$NEW_DEPLOYER"
-          composer config extra.branch-alias.dev-main "$NEXT_RECIPES_MAJOR.x-dev"
+          composer config --json extra.deployer.recipes-major "$NEXT_RECIPES_MAJOR"
           php .github/scripts/deployer-update.php unreleased-changelog "$NEW_DEPLOYER"
 
       - name: Test
@@ -187,7 +189,7 @@ jobs:
             echo '```'
             echo '</details>'
           } > "$RUNNER_TEMP/pr-body.md"
-          .github/scripts/open-pr.sh "deployer/${NEW_DEPLOYER%%.*}" "$NEW_DEPLOYER" true "$RUNNER_TEMP/pr-body.md"
+          .github/scripts/open-pr.sh "deployer/${NEW_DEPLOYER%%.*}" "$NEW_DEPLOYER" true "$RUNNER_TEMP/pr-body.md" "$DEFAULT_BRANCH"
 
   release:
     needs: same-major

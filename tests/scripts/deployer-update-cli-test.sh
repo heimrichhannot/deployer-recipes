@@ -11,7 +11,7 @@ export GIT_AUTHOR_NAME=test GIT_AUTHOR_EMAIL=test@example.org GIT_COMMITTER_NAME
 
 git init --quiet "$work/repo"
 cd "$work/repo"
-echo '{"extra": {"branch-alias": {"dev-main": "2.x-dev"}, "deployer": {"version": "8.0.5"}}}' > composer.json
+echo '{"extra": {"deployer": {"version": "8.0.5", "recipes-major": 2}}}' > composer.json
 printf '# Changelog\n\n## [Unreleased]\n\n## [2.0.0] - 2026-10-01\n\n- x\n' > CHANGELOG.md
 git add . && git commit --quiet -m init && git tag 1.15.0 && git tag 2.0.0
 
@@ -39,6 +39,11 @@ plan="$(printf 'v8.0.6\n' | php "$cli" plan)"
 check 'plan ignores the CHANGELOG' 'grep -qx "mode=release" <<<"$plan" && grep -qx "recipes_version=2.0.2" <<<"$plan"'
 php "$cli" release-changelog 2.0.2 8.0.6
 check 'release-changelog works without an [Unreleased] heading' 'grep -qx "## \[2.0.2\] - $(date -u +%F)" CHANGELOG.md'
+
+cp composer.json composer.json.bak
+echo '{"extra": {"deployer": {"version": "8.0.5"}}}' > composer.json
+check 'plan fails without extra.deployer.recipes-major' '! printf "v8.0.6\n" | php "$cli" plan > /dev/null 2>&1'
+mv composer.json.bak composer.json
 
 check 'unknown command exits 2' '[ "$(php "$cli" bogus 2>/dev/null; echo $?)" = 2 ]'
 

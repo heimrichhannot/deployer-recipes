@@ -154,8 +154,10 @@ update is never pushed.
 
 ### Step 4a: auto path (same major)
 
-1. **Tag guard:** find the latest tag matching `<recipes-major>.*.*` (tags have no `v` prefix). If none exists,
+1. **Tag guard:** find the latest tag matching `<recipes-major>.*.*` (tags have no `v` prefix), where the recipes
+   major comes from `composer.json` `extra.deployer.recipes-major`, not from a branch name. If none exists,
    skip with a notice. This prevents anything happening before `2.0.0` has been tagged by hand.
+   The workflow targets the repository's default branch, whatever it is called.
 2. **Unreleased-commits guard:** if `main` has commits since that tag (`git rev-list --count <tag>..HEAD`),
    humans have merged changes that aren't released yet and the bump level can't be inferred. Instead of
    releasing, push the update to branch `deployer/<major>` (e.g. `deployer/8`) and open or update a PR, with the

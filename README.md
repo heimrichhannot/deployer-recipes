@@ -38,6 +38,7 @@ composer remove --dev deployer/deployer
 
 This package ships the official Deployer phar, verified against the Deployer sign key.
 The bundled version is recorded in `composer.json` under `extra.deployer.version`; `vendor/bin/dep --version` prints it.
+`extra.deployer.recipes-major` names the major version of this package that the default branch releases.
 
 A scheduled workflow bundles new Deployer releases:
 
@@ -47,7 +48,7 @@ A scheduled workflow bundles new Deployer releases:
 | minor (8.0.x → 8.1.0)   | minor, released automatically            |
 | major (8 → 9)           | new major, prepared as a pull request    |
 
-If `main` has commits that are not part of the latest release, patch and minor updates arrive as a pull request
+If the default branch has commits that are not part of the latest release, patch and minor updates arrive as a pull request
 instead, so the version number can be chosen by hand.
 
 The recipes refuse to run under a Deployer major version other than the bundled one.

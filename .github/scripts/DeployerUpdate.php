@@ -119,11 +119,11 @@ final class DeployerUpdate
      * @param list<string> $upstreamTags deployphp/deployer release tags
      * @param list<string> $recipesTags  tags of this repository
      *
-     * @param int          $unreleasedCommits commits on main since the latest recipes tag (latest_tag)
+     * @param int          $unreleasedCommits commits on the default branch since the latest recipes tag (latest_tag)
      *
      * @return array{mode: string, current: string, same_major: string, next_major: string, latest_tag: string, recipes_version: string, next_recipes_major: string}
      *   mode: "none" (no same-major update), "untagged" (no release in this recipes major yet),
-     *   "pr" (main has commits that are not released yet) or "release"
+     *   "pr" (the default branch has commits that are not released yet) or "release"
      */
     public static function plan(string $currentDeployer, int $recipesMajor, array $upstreamTags, array $recipesTags, int $unreleasedCommits): array
     {

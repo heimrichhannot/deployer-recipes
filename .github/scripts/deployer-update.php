@@ -32,8 +32,11 @@ function git(string $arguments): array
 switch ($argv[1] ?? '') {
     case 'plan':
         $recipesTags = git('tag --list');
-        $branchAlias = $composer['extra']['branch-alias']['dev-main'] ?? throw new \RuntimeException('composer.json has no extra.branch-alias.dev-main');
-        $recipesMajor = DeployerUpdate::major($branchAlias);
+        // The major version this branch releases, independent of the branch name
+        $recipesMajor = $composer['extra']['deployer']['recipes-major'] ?? null;
+        if (!\is_int($recipesMajor) || $recipesMajor < 1) {
+            throw new \RuntimeException('composer.json needs extra.deployer.recipes-major as a positive integer, e.g. 2');
+        }
         $latestTag = DeployerUpdate::latestRecipesTag($recipesTags, $recipesMajor);
         $plan = DeployerUpdate::plan(
             $composer['extra']['deployer']['version'] ?? throw new \RuntimeException('composer.json has no extra.deployer.version'),

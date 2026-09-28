@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 - Bundle the Deployer 8.0.5 phar and expose it as `vendor/bin/dep` (see "Bundled Deployer" in the README).
 - Refuse to run under a Deployer major version other than the bundled one, with a hint to use `vendor/bin/dep`.
 - Scheduled workflow that bundles new Deployer releases and releases them automatically;
-  Deployer majors, and updates while `main` has unreleased commits, arrive as a pull request.
+  Deployer majors, and updates while the default branch has unreleased commits, arrive as a pull request.
 - CI with unit, smoke and signature tests.
 
 ### Changed

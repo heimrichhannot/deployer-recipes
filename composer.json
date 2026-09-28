@@ -35,11 +35,9 @@
         }
     },
     "extra": {
-        "branch-alias": {
-            "dev-main": "2.x-dev"
-        },
         "deployer": {
-            "version": "8.0.5"
+            "version": "8.0.5",
+            "recipes-major": 2
         }
     }
 }
