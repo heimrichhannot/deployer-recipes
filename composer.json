@@ -12,9 +12,9 @@
         }
     ],
     "require": {
-        "php": "^8.0",
+        "php": "^8.3",
         "ext-json": "*",
-        "deployer/deployer": "^7.3"
+        "deployer/deployer": "^8.0"
     },
     "autoload": {
         "files": [

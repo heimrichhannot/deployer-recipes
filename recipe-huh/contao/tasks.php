@@ -113,7 +113,7 @@ task('opcache:clear', function () {
 
     writeln('Execute cache clear file', OutputInterface::VERBOSITY_VERBOSE);
     $url = rtrim(parse('{{public_url}}'), '/').'/'.$tmpFileName;
-    $result = run("cd $path && curl -kL -A \"deployer/clear_opt_cache\" $url", ['no_throw' => true]);
+    $result = run("cd $path && curl -kL -A \"deployer/clear_opt_cache\" $url", nothrow: true);
 
     if (!in_array((int) $result, [1, 2], true)) {
         warning('Failed to clear opcache automatically.');

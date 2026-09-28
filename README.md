@@ -1,6 +1,20 @@
 # deployer-recipes
 Deployer recipes used at [Heimrich & Hannot GmbH](https://www.heimrich-hannot.de).
 
+## Requirements
+
+- [Deployer](https://deployer.org/) 8
+- PHP 8.3 or later in the environment you run `dep` in (e.g. your ddev web container)
+
+Projects that cannot use PHP 8.3 yet must stay on version 1 of this package, which uses Deployer 7:
+```shell
+composer require --dev heimrichhannot/deployer-recipes:^1.15
+```
+
+> [!NOTE]
+> Deployer 8 rewrote its TYPO3 recipe (own `deploy` task, optional rsync, different shared and writable directories).
+> Check your `deploy.php` against the [upstream recipe](https://deployer.org/docs/8.x/recipe/typo3) when upgrading a TYPO3 project.
+
 ## Install
 
 To use our recipes, require this package with composer.
@@ -129,12 +143,12 @@ set('keep_releases', 10);
 ## Setup of multiple hosts or environments
 
 You may set up multiple hosts or environments by using the `host()` function multiple times.
-If you do not specify **[selectors](https://deployer.org/docs/7.x/selector)** (like labels) when running your deployer commands, you will be asked to choose which hosts to run that command for.
+If you do not specify **[selectors](https://deployer.org/docs/8.x/selector)** (like labels) when running your deployer commands, you will be asked to choose which hosts to run that command for.
 
 If you want to set common variables for all hosts, use the provided proxy function `broadcast()`, to call any number of methods on all previously defined hosts.
 
 > [!IMPORTANT]
-> Make sure to use **[labels](https://deployer.org/docs/7.x/selector)** to differentiate between environments when defining multiple hosts.
+> Make sure to use **[labels](https://deployer.org/docs/8.x/selector)** to differentiate between environments when defining multiple hosts.
 
 ```php
 host('stage')
