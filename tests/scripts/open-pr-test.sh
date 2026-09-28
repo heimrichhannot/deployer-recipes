@@ -8,12 +8,15 @@ trap 'rm -rf "$work"' EXIT
 fails=0
 check() { if eval "$2"; then echo "ok: $1"; else echo "FAIL: $1"; fails=1; fi; }
 
-# Stub gh: "pr list" prints $work/open-pr (empty = no open PR); every call is logged.
+# Stub gh: "pr list" prints $work/open-pr (empty = no open PR), "pr view" prints the comments that
+# "pr comment" appended to $work/comments; every call is logged.
 mkdir "$work/stub"
 cat > "$work/stub/gh" <<STUB
 #!/usr/bin/env bash
 echo "\$*" >> "$work/gh.log"
 if [ "\$1 \$2" = "pr list" ]; then cat "$work/open-pr" 2>/dev/null || true; fi
+if [ "\$1 \$2" = "pr view" ]; then cat "$work/comments" 2>/dev/null || true; fi
+if [ "\$1 \$2" = "pr comment" ]; then echo "\$*" >> "$work/comments"; fi
 STUB
 chmod +x "$work/stub/gh"
 export PATH="$work/stub:$PATH"
@@ -43,11 +46,35 @@ check 'unchanged version does not push' '[ "$(git --git-dir="$work/remote.git" r
 check 'unchanged version does not call gh' '[ ! -s "$work/gh.log" ]'
 
 # 3. Newer version with the PR still open: force-pushes and edits the PR instead of creating another.
-git checkout --quiet -f main && bump 9.0.1 && echo 42 > "$work/open-pr"
+#    Someone else's commit on main (not on the branch) must not count as a foreign commit on the branch.
+git clone --quiet --branch main "$work/remote.git" "$work/main-human"
+(cd "$work/main-human" && echo docs > README.md && git add README.md \
+    && GIT_AUTHOR_EMAIL=human@example.org git commit --quiet -m "Docs" && git push --quiet origin main)
+git checkout --quiet -f main && git pull --quiet --ff-only origin main && bump 9.0.1 && echo 42 > "$work/open-pr"
 "$script" deployer/9 9.0.1 true "$work/body.md" > /dev/null
 check 'newer version force-pushes the branch' '[ "$(remote_version)" = "\"version\": \"9.0.1\"" ]'
 check 'newer version edits the open PR' 'grep -q -- "pr edit 42 --title Bundle Deployer 9.0.1" "$work/gh.log"'
 check 'newer version creates no second PR' '[ "$(grep -c "pr create" "$work/gh.log")" = 0 ]'
+
+# 3b. The branch now contains someone else's commit from main; that must not block the next update.
+git checkout --quiet -f main && bump 9.0.2 && : > "$work/gh.log"
+"$script" deployer/9 9.0.2 true "$work/body.md" > /dev/null
+check 'commits from main on the branch do not block updates' '[ "$(remote_version)" = "\"version\": \"9.0.2\"" ]'
+
+# 5. Someone pushed a commit to the branch: a newer version must not force-push over it, but comment once.
+git clone --quiet --branch deployer/9 "$work/remote.git" "$work/human"
+(cd "$work/human" && echo fix > recipe-fix.php && git add recipe-fix.php \
+    && GIT_AUTHOR_EMAIL=human@example.org git commit --quiet -m "Fix recipe for Deployer 9" && git push --quiet origin deployer/9)
+human_head="$(git --git-dir="$work/remote.git" rev-parse deployer/9)"
+git checkout --quiet -f main && bump 9.0.3 && : > "$work/gh.log"
+"$script" deployer/9 9.0.3 true "$work/body.md" > /dev/null 2>&1
+check 'branch with foreign commits is not force-pushed' '[ "$(git --git-dir="$work/remote.git" rev-parse deployer/9)" = "$human_head" ]'
+check 'branch with foreign commits gets a comment instead' 'grep -q -- "pr comment 42 --body Deployer 9.0.3" "$work/gh.log"'
+
+# 6. Same situation on the next run: no second comment.
+git checkout --quiet -f main && bump 9.0.3 && : > "$work/gh.log"
+"$script" deployer/9 9.0.3 true "$work/body.md" > /dev/null 2>&1
+check 'foreign-commit comment is posted only once' '[ "$(grep -c "pr comment" "$work/gh.log")" = 0 ]'
 
 # 4. Non-draft mode omits --draft.
 git checkout --quiet -f main && bump 8.0.6 && rm -f "$work/open-pr" && : > "$work/gh.log"
