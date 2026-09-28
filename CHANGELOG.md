@@ -2,12 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0]
+## [Unreleased]
 
 ### Changed
 
-- **Breaking:** Require Deployer 8 (`deployer/deployer: ^8.0`) and PHP 8.3 or later.
-  Projects on older PHP versions must stay on `^1.15`.
+- Require Deployer 8 (`deployer/deployer: ^8.0`) and PHP 8.3 or later.
+  Projects on older PHP versions can stay on `~1.15.0`, which uses Deployer 7.
 - Converted `run()`/`runLocally()` option arrays to named arguments, as required by Deployer 8.
 - Database imports and restores (`db:pull`, `db:push`, `db:import:*`) and the local migration after `db:pull` run without a timeout again;
   with Deployer 8, `timeout: null` would fall back to the default timeout of 300 seconds.

@@ -6,9 +6,9 @@ Deployer recipes used at [Heimrich & Hannot GmbH](https://www.heimrich-hannot.de
 - [Deployer](https://deployer.org/) 8
 - PHP 8.3 or later in the environment you run `dep` in (e.g. your ddev web container)
 
-Projects that cannot use PHP 8.3 yet must stay on version 1 of this package, which uses Deployer 7:
+Projects that cannot use PHP 8.3 yet can stay on version 1.15 of this package, which uses Deployer 7:
 ```shell
-composer require --dev heimrichhannot/deployer-recipes:^1.15
+composer require --dev heimrichhannot/deployer-recipes:~1.15.0
 ```
 
 > [!NOTE]
