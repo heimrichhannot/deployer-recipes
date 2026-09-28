@@ -1,0 +1,7 @@
+bin/deployer.phar binary
+bin/deployer.phar.asc export-ignore
+/.github export-ignore
+/docs export-ignore
+/tests export-ignore
+/phpunit.xml.dist export-ignore
+/.gitattributes export-ignore
