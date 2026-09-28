@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - '**'
+  # Tags pushed by the Deployer update workflow don't trigger the push event, so it calls this workflow directly.
+  workflow_call:
+    inputs:
+      tag:
+        description: Tag to release
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -16,12 +23,12 @@ jobs:
       - name: Check out tagged revision
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Create or update release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.tag || github.ref_name }}
         shell: bash
         run: |
           set -euo pipefail
@@ -78,4 +85,10 @@ jobs:
             exit 0
           fi
 
-          gh release create "${TAG}" --title "${TAG}" --notes-file "${notes_file}"
+          title="${TAG}"
+          deployer_version="$(jq -r '.extra.deployer.version // empty' composer.json)"
+          if [[ -n "${deployer_version}" ]]; then
+            title="${TAG} (Deployer ${deployer_version})"
+          fi
+
+          gh release create "${TAG}" --title "${title}" --notes-file "${notes_file}"
