@@ -82,17 +82,36 @@ jobs:
         with:
           php-version: '8.3'
 
+      - name: Check update branch
+        id: branch
+        if: env.MODE == 'pr'
+        run: |
+          # Not deployer/<major>: a leftover next-major branch of the same name must not block these updates
+          branch="deployer/${NEW_DEPLOYER%%.*}-update"
+          echo "name=$branch" >> "$GITHUB_OUTPUT"
+          # Dry runs always test; real runs skip the work if the branch already bundles this version
+          if [ "$PUBLISH" = true ]; then
+            bundled="$(.github/scripts/open-pr.sh --bundled-version "$branch")"
+            if [ "$bundled" = "$NEW_DEPLOYER" ]; then
+              echo "$branch already bundles Deployer $NEW_DEPLOYER; nothing to do."
+              echo skip=true >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
       - name: Bundle Deployer ${{ env.NEW_DEPLOYER }}
+        if: steps.branch.outputs.skip != 'true'
         run: |
           .github/scripts/fetch-phar.sh "$NEW_DEPLOYER" bin
           composer config extra.deployer.version "$NEW_DEPLOYER"
 
       - name: Test
+        if: steps.branch.outputs.skip != 'true'
         run: |
           composer validate --strict --no-check-lock
           tests/smoke/run.sh
 
       - name: Update changelog
+        if: steps.branch.outputs.skip != 'true'
         run: |
           if [ "$MODE" = release ]; then
             php .github/scripts/deployer-update.php release-changelog "$RECIPES_VERSION" "$NEW_DEPLOYER"
@@ -116,7 +135,9 @@ jobs:
           echo "tag=$RECIPES_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Open pull request
-        if: env.MODE == 'pr' && env.PUBLISH == 'true'
+        if: env.MODE == 'pr' && env.PUBLISH == 'true' && steps.branch.outputs.skip != 'true'
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
         run: |
           {
             echo "Deployer $NEW_DEPLOYER was released ([release notes](https://github.com/deployphp/deployer/releases/tag/v$NEW_DEPLOYER))."
@@ -126,7 +147,7 @@ jobs:
             echo
             echo 'CI does not run on pull requests opened by this workflow; the smoke test passed in the workflow run.'
           } > "$RUNNER_TEMP/pr-body.md"
-          .github/scripts/open-pr.sh "deployer/${NEW_DEPLOYER%%.*}" "$NEW_DEPLOYER" false "$RUNNER_TEMP/pr-body.md" "$DEFAULT_BRANCH"
+          .github/scripts/open-pr.sh "$BRANCH" "$NEW_DEPLOYER" false "$RUNNER_TEMP/pr-body.md" "$DEFAULT_BRANCH"
 
   next-major:
     needs: plan
@@ -148,7 +169,22 @@ jobs:
         with:
           php-version: '8.3'
 
+      - name: Check update branch
+        id: branch
+        run: |
+          branch="deployer/${NEW_DEPLOYER%%.*}"
+          echo "name=$branch" >> "$GITHUB_OUTPUT"
+          # Dry runs always test; real runs skip the work if the branch already bundles this version
+          if [ "$PUBLISH" = true ]; then
+            bundled="$(.github/scripts/open-pr.sh --bundled-version "$branch")"
+            if [ "$bundled" = "$NEW_DEPLOYER" ]; then
+              echo "$branch already bundles Deployer $NEW_DEPLOYER; nothing to do."
+              echo skip=true >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
       - name: Bundle Deployer ${{ env.NEW_DEPLOYER }}
+        if: steps.branch.outputs.skip != 'true'
         run: |
           .github/scripts/fetch-phar.sh "$NEW_DEPLOYER" bin
           composer config extra.deployer.version "$NEW_DEPLOYER"
@@ -157,6 +193,7 @@ jobs:
 
       - name: Test
         id: test
+        if: steps.branch.outputs.skip != 'true'
         run: |
           set +e
           { composer validate --strict --no-check-lock && tests/smoke/run.sh; } > "$RUNNER_TEMP/test.log" 2>&1
@@ -169,8 +206,9 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
       - name: Open draft pull request
-        if: env.PUBLISH == 'true'
+        if: env.PUBLISH == 'true' && steps.branch.outputs.skip != 'true'
         env:
+          BRANCH: ${{ steps.branch.outputs.name }}
           TEST_STATUS: ${{ steps.test.outputs.status }}
         run: |
           if [ "$TEST_STATUS" = 0 ]; then result=passed; else result="failed (exit $TEST_STATUS)"; fi
@@ -189,7 +227,7 @@ jobs:
             echo '```'
             echo '</details>'
           } > "$RUNNER_TEMP/pr-body.md"
-          .github/scripts/open-pr.sh "deployer/${NEW_DEPLOYER%%.*}" "$NEW_DEPLOYER" true "$RUNNER_TEMP/pr-body.md" "$DEFAULT_BRANCH"
+          .github/scripts/open-pr.sh "$BRANCH" "$NEW_DEPLOYER" true "$RUNNER_TEMP/pr-body.md" "$DEFAULT_BRANCH"
 
   release:
     needs: same-major
