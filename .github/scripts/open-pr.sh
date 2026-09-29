@@ -4,17 +4,26 @@
 # Commits the working tree to <branch>, pushes it and opens or updates its pull request against <base-branch>.
 # Does nothing if <branch> on origin already bundles <deployer-version>, so daily runs don't churn the PR.
 # Never overwrites commits made by anyone else (e.g. recipe fixes on a Deployer major branch): comments on the
-# open pull request once per version instead, and fails if there is none. Merge commits (e.g. from GitHub's
-# "Update branch") don't count. Fails if origin cannot be read, rather than treating the branch as missing.
-# --bundled-version prints the Deployer version bundled on origin's <branch>, or nothing if there is no such branch.
+# open pull request once per version instead, and fails if there is none. Clean merges (e.g. from GitHub's
+# "Update branch") don't count; merges with changes of their own, like a resolved conflict, do.
+# Fails if origin cannot be read, rather than treating the branch as missing.
+# --bundled-version prints the Deployer version bundled on origin's <branch>, or nothing if there is no such branch
+# or its composer.json is missing or unreadable.
 set -euo pipefail
 shopt -s inherit_errexit
 
 scripts="$(cd "$(dirname "$0")" && pwd)"
 
-# extra.deployer.version of the composer.json on stdin
-bundled_version() {
-    php "$scripts/deployer-update.php" bundled-version
+usage() {
+    sed -n 's/^# \{0,1\}\(Usage: \|       open-pr\)/\1/p' "$0" >&2
+    exit 2
+}
+
+# extra.deployer.version bundled at commit $1; nothing if its composer.json is missing or not valid JSON
+version_at() {
+    if git cat-file -e "$1:composer.json" 2>/dev/null; then
+        git show "$1:composer.json" | php "$scripts/deployer-update.php" bundled-version
+    fi
 }
 
 # Fetches origin's branch $1 into refs/remotes/origin/$1 and prints its commit, or prints nothing if it does not exist.
@@ -39,19 +48,21 @@ open_pr_number() {
 }
 
 if [ "${1:-}" = --bundled-version ]; then
+    [ $# = 2 ] || usage
     remote="$(fetch_branch "$2")"
     if [ -n "$remote" ]; then
-        git show "$remote:composer.json" | bundled_version
+        version_at "$remote"
     fi
     exit 0
 fi
 
+[ $# = 5 ] || usage
 branch=$1 version=$2 draft=$3 body_file=$4 base=$5
 title="Bundle Deployer $version"
 
 remote="$(fetch_branch "$branch")"
 if [ -n "$remote" ]; then
-    if [ "$(git show "$remote:composer.json" | bundled_version)" = "$version" ]; then
+    if [ "$(version_at "$remote")" = "$version" ]; then
         echo "$branch already bundles Deployer $version; nothing to do."
         exit 0
     fi
@@ -60,6 +71,12 @@ if [ -n "$remote" ]; then
     self="$(git var GIT_AUTHOR_IDENT | sed -E 's/^.*<([^>]*)>.*$/\1/')"
     # grep without -q reads all of git log's output, so pipefail can't see a SIGPIPE
     foreign="$(git log --no-merges --format=%ae "refs/remotes/origin/$base..$remote" | { grep -vxF "$self" || true; })"
+    # A merge only counts if it changed something itself: --cc shows nothing for a clean merge
+    for merge in $(git rev-list --merges "refs/remotes/origin/$base..$remote"); do
+        if [ -n "$(git show --cc --format= "$merge")" ]; then
+            foreign+="$(git show --no-patch --format=%ae "$merge")"
+        fi
+    done
     if [ -n "$foreign" ]; then
         number="$(open_pr_number)"
         if [ -z "$number" ]; then

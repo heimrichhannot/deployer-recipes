@@ -11,8 +11,8 @@
  *   php .github/scripts/deployer-update.php unreleased-changelog <deployer-version>
  *       Adds a "Bundle Deployer" entry to the [Unreleased] section of CHANGELOG.md.
  *   php .github/scripts/deployer-update.php bundled-version < composer.json
- *       Prints extra.deployer.version of the composer.json on stdin, or nothing if it has none.
- *       Works from any directory.
+ *       Prints extra.deployer.version of the composer.json on stdin, or nothing if it has none or is not
+ *       valid JSON (with a warning). Works from any directory.
  */
 
 use HeimrichHannot\DeployerRecipes\Ci\DeployerUpdate;
@@ -73,7 +73,12 @@ switch ($argv[1] ?? '') {
         break;
 
     case 'bundled-version':
-        echo bundledVersion(composer(\stream_get_contents(\STDIN))) ?? '';
+        try {
+            echo bundledVersion(composer(\stream_get_contents(\STDIN))) ?? '';
+        } catch (\JsonException $e) {
+            // e.g. conflict markers on an update branch: that branch simply does not bundle a known version
+            \fwrite(\STDERR, "Warning: composer.json is not valid JSON ({$e->getMessage()}).\n");
+        }
         break;
 
     default:

@@ -53,6 +53,8 @@ mv composer.json.bak composer.json
 check 'bundled-version prints the version' '[ "$(php "$cli" bundled-version < composer.json)" = 8.0.5 ]'
 check 'bundled-version works from another directory' '[ "$(cd / && echo "{\"extra\": {\"deployer\": {\"version\": \"9.0.0\"}}}" | php "$cli" bundled-version)" = 9.0.0 ]'
 check 'bundled-version prints nothing without a version' '[ -z "$(echo "{}" | php "$cli" bundled-version)" ]'
+status=0; out="$(echo '<<<<<<< HEAD' | php "$cli" bundled-version 2> "$work/stderr")" || status=$?
+check 'bundled-version prints nothing for invalid JSON' '[ "$status" = 0 ] && [ -z "$out" ] && grep -q "not valid JSON" "$work/stderr"'
 
 check 'unknown command exits 2' '[ "$(php "$cli" bogus 2>/dev/null; echo $?)" = 2 ]'
 
