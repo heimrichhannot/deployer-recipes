@@ -8,6 +8,8 @@ on:
 
 jobs:
   test:
+    # Branches of this repository are tested on push; pull_request is only needed for pull requests from forks
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
 
     steps:
