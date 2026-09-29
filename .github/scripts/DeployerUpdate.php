@@ -55,6 +55,7 @@ final class DeployerUpdate
 
     /**
      * Deployer patch release → recipes patch bump; Deployer minor release → recipes minor bump.
+     * Keeps a "v" prefix of $latestRecipesTag, so new tags match the existing ones.
      */
     public static function nextRecipesVersion(string $latestRecipesTag, string $currentDeployer, string $newDeployer): string
     {
@@ -68,13 +69,28 @@ final class DeployerUpdate
         [$major, $minor, $patch] = \array_map('intval', \explode('.', self::stableVersions([$latestRecipesTag])[0] ?? throw new \InvalidArgumentException(\sprintf('Not a version: "%s"', $latestRecipesTag))));
         $minorChanged = \explode('.', $currentDeployer)[1] !== \explode('.', $newDeployer)[1];
 
-        return $minorChanged ? "$major." . ($minor + 1) . '.0' : "$major.$minor." . ($patch + 1);
+        $prefix = \str_starts_with(\trim($latestRecipesTag), 'v') ? 'v' : '';
+
+        return $prefix . ($minorChanged ? "$major." . ($minor + 1) . '.0' : "$major.$minor." . ($patch + 1));
     }
 
-    /** @param list<string> $recipesTags tags of this repository */
+    /**
+     * @param list<string> $recipesTags tags of this repository
+     *
+     * @return string|null the tag as written, e.g. "v2.0.9", so it can be used as a git ref
+     */
     public static function latestRecipesTag(array $recipesTags, int $recipesMajor): ?string
     {
-        return self::latestInMajor(self::stableVersions($recipesTags), $recipesMajor);
+        $tagsByVersion = [];
+        foreach ($recipesTags as $tag) {
+            $version = self::stableVersions([$tag])[0] ?? null;
+            if ($version !== null) {
+                $tagsByVersion[$version] = \trim($tag);
+            }
+        }
+        $latest = self::latestInMajor(self::stableVersions(\array_keys($tagsByVersion)), $recipesMajor);
+
+        return $latest === null ? null : $tagsByVersion[$latest];
     }
 
     public static function bundleLine(string $deployerVersion): string

@@ -40,6 +40,7 @@ final class DeployerUpdateTest extends TestCase
         yield 'Deployer minor → recipes minor, patch reset' => ['2.3.1', '8.0.5', '8.1.0', '2.4.0'];
         yield 'Deployer minor and patch → recipes minor' => ['2.3.1', '8.0.5', '8.2.3', '2.4.0'];
         yield 'two-digit patch' => ['2.0.9', '8.0.9', '8.0.10', '2.0.10'];
+        yield 'keeps a "v" prefix' => ['v2.0.9', '8.0.9', '8.0.10', 'v2.0.10'];
     }
 
     #[DataProvider('bumps')]
@@ -64,6 +65,11 @@ final class DeployerUpdateTest extends TestCase
     {
         self::assertSame('2.1.0', DeployerUpdate::latestRecipesTag(['1.15.0', '2.0.0', '2.1.0', '3.0.0-rc.1', 'v2.0.9'], 2));
         self::assertNull(DeployerUpdate::latestRecipesTag(['1.15.0'], 2));
+    }
+
+    public function testLatestRecipesTagReturnsTheTagAsWritten(): void
+    {
+        self::assertSame('v2.0.9', DeployerUpdate::latestRecipesTag(['1.15.0', 'v2.0.8', 'v2.0.9'], 2));
     }
 
     public function testInsertReleaseBelowEmptyUnreleased(): void
@@ -188,6 +194,14 @@ final class DeployerUpdateTest extends TestCase
         self::assertSame('8.0.6', $plan['same_major']);
         self::assertSame('2.0.0', $plan['latest_tag']);
         self::assertSame('', $plan['recipes_version']);
+    }
+
+    public function testPlanKeepsTheTagPrefix(): void
+    {
+        $plan = DeployerUpdate::plan('8.0.5', 2, ['v8.0.6'], ['v2.0.9'], 0);
+
+        self::assertSame('v2.0.9', $plan['latest_tag']);
+        self::assertSame('v2.0.10', $plan['recipes_version']);
     }
 
     public function testPlanWaitsForFirstTagInRecipesMajor(): void
