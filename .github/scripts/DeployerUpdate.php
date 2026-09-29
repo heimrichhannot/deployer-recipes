@@ -123,10 +123,13 @@ final class DeployerUpdate
             [$before, $body, $after] = self::splitUnreleased($changelog);
             $line = self::bundleLine($deployerVersion);
 
-            // The heading and any blank lines after it, whether or not the list follows directly
-            $changedHeading = '/^### Changed[ \t]*\n(?:[ \t]*\n)*/m';
+            // The heading and any blank lines after it, whether or not the list follows directly,
+            // also on the last line; \r for CRLF lines in a changelog with mixed line endings
+            $changedHeading = '/^### Changed[ \t\r]*(?:\n|\z)(?:[ \t\r]*\n)*/m';
             if (\preg_match($changedHeading, $body)) {
                 $body = \preg_replace($changedHeading, "### Changed\n\n$line\n", $body, 1);
+                // An empty list: keep the blank line before the next heading
+                $body = \preg_replace('/^(' . \preg_quote($line, '/') . ')\n(?=#)/m', "\$1\n\n", $body, 1);
             } else {
                 $body = "\n\n### Changed\n\n$line\n" . (\trim($body) === '' ? '' : "\n" . \ltrim($body, "\n"));
             }
@@ -177,13 +180,14 @@ final class DeployerUpdate
     }
 
     /**
-     * Runs $edit on $changelog with LF line endings and restores CRLF endings afterwards if the changelog used them.
+     * Runs $edit on $changelog with LF line endings and restores CRLF endings afterwards if the changelog used only those.
+     * A changelog with mixed line endings is edited as it is, so its existing lines keep their endings.
      *
      * @param callable(string): string $edit
      */
     private static function withLf(string $changelog, callable $edit): string
     {
-        if (!\str_contains($changelog, "\r\n")) {
+        if (!\str_contains($changelog, "\r\n") || \preg_match('/(?<!\r)\n/', $changelog)) {
             return $edit($changelog);
         }
 

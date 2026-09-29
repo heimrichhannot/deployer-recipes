@@ -175,6 +175,41 @@ final class DeployerUpdateTest extends TestCase
         );
     }
 
+    public function testAddUnreleasedEntryFindsChangedHeadingOnTheLastLine(): void
+    {
+        $result = DeployerUpdate::addUnreleasedEntry(self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Changed", '9.0.0');
+
+        self::assertSame(
+            self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Changed\n\n"
+            . "- Bundle Deployer 9.0.0 ([release notes](https://github.com/deployphp/deployer/releases/tag/v9.0.0)).\n",
+            $result,
+        );
+    }
+
+    public function testAddUnreleasedEntryKeepsBlankLineBeforeNextHeading(): void
+    {
+        $changelog = self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Changed\n\n\n### Fixed\n\n- y\n\n## [2.3.1] - 2026-10-01\n\n- z\n";
+
+        self::assertSame(
+            self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Changed\n\n"
+            . "- Bundle Deployer 9.0.0 ([release notes](https://github.com/deployphp/deployer/releases/tag/v9.0.0)).\n\n"
+            . "### Fixed\n\n- y\n\n## [2.3.1] - 2026-10-01\n\n- z\n",
+            DeployerUpdate::addUnreleasedEntry($changelog, '9.0.0'),
+        );
+    }
+
+    public function testAddUnreleasedEntryLeavesMixedLineEndingsAlone(): void
+    {
+        $changelog = self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Changed\n\n- Pasted\r\n\n## [2.3.1] - 2026-10-01\n\n- z\n";
+
+        self::assertSame(
+            self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Changed\n\n"
+            . "- Bundle Deployer 9.0.0 ([release notes](https://github.com/deployphp/deployer/releases/tag/v9.0.0)).\n"
+            . "- Pasted\r\n\n## [2.3.1] - 2026-10-01\n\n- z\n",
+            DeployerUpdate::addUnreleasedEntry($changelog, '9.0.0'),
+        );
+    }
+
     public function testAddUnreleasedEntryCreatesChangedList(): void
     {
         $changelog = self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Fixed\n\n- y\n\n## [2.3.1] - 2026-10-01\n\n- z\n";
