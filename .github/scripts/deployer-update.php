@@ -11,8 +11,8 @@
  *   php .github/scripts/deployer-update.php unreleased-changelog <deployer-version>
  *       Adds a "Bundle Deployer" entry to the [Unreleased] section of CHANGELOG.md.
  *   php .github/scripts/deployer-update.php bundled-version < composer.json
- *       Prints extra.deployer.version of the composer.json on stdin, or nothing if it has none or is not
- *       valid JSON (with a warning). Works from any directory.
+ *       Prints extra.deployer.version of the composer.json on stdin, or nothing if it has no string version
+ *       there or is not valid JSON (with a warning). Works from any directory.
  */
 
 use HeimrichHannot\DeployerRecipes\Ci\DeployerUpdate;
@@ -25,10 +25,12 @@ function composer(string $json): array
     return \json_decode($json, true, flags: \JSON_THROW_ON_ERROR);
 }
 
-/** @param array<string, mixed> $composer */
-function bundledVersion(array $composer): ?string
+/** @param mixed $composer decoded composer.json, of any shape */
+function bundledVersion(mixed $composer): ?string
 {
-    return $composer['extra']['deployer']['version'] ?? null;
+    $version = \is_array($composer) ? $composer['extra']['deployer']['version'] ?? null : null;
+
+    return \is_string($version) ? $version : null;
 }
 
 /** @return list<string> output lines of a git command; throws if it fails */
@@ -74,7 +76,7 @@ switch ($argv[1] ?? '') {
 
     case 'bundled-version':
         try {
-            echo bundledVersion(composer(\stream_get_contents(\STDIN))) ?? '';
+            echo bundledVersion(\json_decode(\stream_get_contents(\STDIN), true, flags: \JSON_THROW_ON_ERROR)) ?? '';
         } catch (\JsonException $e) {
             // e.g. conflict markers on an update branch: that branch simply does not bundle a known version
             \fwrite(\STDERR, "Warning: composer.json is not valid JSON ({$e->getMessage()}).\n");

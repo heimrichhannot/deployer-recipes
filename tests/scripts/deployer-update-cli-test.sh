@@ -55,6 +55,10 @@ check 'bundled-version works from another directory' '[ "$(cd / && echo "{\"extr
 check 'bundled-version prints nothing without a version' '[ -z "$(echo "{}" | php "$cli" bundled-version)" ]'
 status=0; out="$(echo '<<<<<<< HEAD' | php "$cli" bundled-version 2> "$work/stderr")" || status=$?
 check 'bundled-version prints nothing for invalid JSON' '[ "$status" = 0 ] && [ -z "$out" ] && grep -q "not valid JSON" "$work/stderr"'
+for json in 'null' '"x"' '{"extra": {"deployer": {"version": ["a"]}}}'; do
+    status=0; out="$(echo "$json" | php "$cli" bundled-version 2>&1)" || status=$?
+    check "bundled-version prints nothing for $json" '[ "$status" = 0 ] && [ -z "$out" ]'
+done
 
 check 'unknown command exits 2' '[ "$(php "$cli" bogus 2>/dev/null; echo $?)" = 2 ]'
 
