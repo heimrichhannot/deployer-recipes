@@ -5,7 +5,7 @@
 # Does nothing if <branch> on origin already bundles <deployer-version>, so daily runs don't churn the PR.
 # Never overwrites commits made by anyone else (e.g. recipe fixes on a Deployer major branch): comments on the
 # open pull request once per version instead, and fails if there is none. Clean merges (e.g. from GitHub's
-# "Update branch") don't count; merges with changes of their own, like a resolved conflict, do.
+# "Update branch") don't count; other people's merges with changes of their own, like a resolved conflict, do.
 # Fails if origin cannot be read, rather than treating the branch as missing.
 # --bundled-version prints the Deployer version bundled on origin's <branch>, or nothing if there is no such branch
 # or its composer.json is missing or unreadable.
@@ -15,7 +15,10 @@ shopt -s inherit_errexit
 scripts="$(cd "$(dirname "$0")" && pwd)"
 
 usage() {
-    sed -n 's/^# \{0,1\}\(Usage: \|       open-pr\)/\1/p' "$0" >&2
+    cat >&2 <<'USAGE'
+Usage: open-pr.sh <branch> <deployer-version> <draft: true|false> <body-file> <base-branch>
+       open-pr.sh --bundled-version <branch>
+USAGE
     exit 2
 }
 
@@ -71,10 +74,11 @@ if [ -n "$remote" ]; then
     self="$(git var GIT_AUTHOR_IDENT | sed -E 's/^.*<([^>]*)>.*$/\1/')"
     # grep without -q reads all of git log's output, so pipefail can't see a SIGPIPE
     foreign="$(git log --no-merges --format=%ae "refs/remotes/origin/$base..$remote" | { grep -vxF "$self" || true; })"
-    # A merge only counts if it changed something itself: --cc shows nothing for a clean merge
+    # Someone else's merge only counts if it changed something itself: --cc shows nothing for a clean merge
     for merge in $(git rev-list --merges "refs/remotes/origin/$base..$remote"); do
-        if [ -n "$(git show --cc --format= "$merge")" ]; then
-            foreign+="$(git show --no-patch --format=%ae "$merge")"
+        author="$(git show --no-patch --format=%ae "$merge")"
+        if [ "$author" != "$self" ] && [ -n "$(git show --cc --format= "$merge")" ]; then
+            foreign+="$author"
         fi
     done
     if [ -n "$foreign" ]; then

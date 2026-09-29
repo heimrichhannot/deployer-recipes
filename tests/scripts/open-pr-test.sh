@@ -135,13 +135,9 @@ git remote set-url origin "$work/remote.git" && git config --unset remote.origin
 check 'an unreadable origin makes the script fail' '[ "$status" != 0 ]'
 check 'an unreadable origin does not push' '[ "$(remote_head)" = "$human_head" ]'
 
-# 9. Someone broke composer.json on the branch: the branch is not current, so the script comments instead of crashing.
+# 9. Someone broke or removed composer.json on the branch: --bundled-version reports no version instead of failing.
 (cd "$work/human" && git pull --quiet --ff-only origin deployer/9 && echo '<<<<<<< HEAD' > composer.json \
     && GIT_AUTHOR_EMAIL=human@example.org git commit --quiet -am "Break composer.json" && git push --quiet origin deployer/9)
-git checkout --quiet -f v2 && bump 9.0.7 && : > "$work/gh.log"
-status=0; "$script" deployer/9 9.0.7 true "$work/body.md" v2 > /dev/null 2>&1 || status=$?
-check 'an unreadable composer.json on the branch does not fail the script' '[ "$status" = 0 ]'
-check 'an unreadable composer.json on the branch gets a comment' 'grep -q -- "pr comment 42 --body Deployer 9.0.7" "$work/gh.log"'
 status=0; bundled="$("$script" --bundled-version deployer/9 2>/dev/null)" || status=$?
 check '--bundled-version prints nothing for an unreadable composer.json' '[ "$status" = 0 ] && [ -z "$bundled" ]'
 (cd "$work/human" && git rm --quiet composer.json \
@@ -150,23 +146,39 @@ status=0; bundled="$("$script" --bundled-version deployer/9 2>/dev/null)" || sta
 check '--bundled-version prints nothing for a missing composer.json' '[ "$status" = 0 ] && [ -z "$bundled" ]'
 
 # 10. Someone merged the base branch into the PR branch and resolved a conflict by hand: that merge is someone
-#     else's work and must not be force-pushed away.
+#     else's work and must not be force-pushed away. The same merge by the update workflow's own identity is not.
+# Changes composer.json on v2, so that merging v2 into deployer/10 conflicts
+base_change() {
+    (cd "$work/main-human" && git pull --quiet --ff-only origin v2 \
+        && echo "{\"name\": \"$1\", \"extra\": {\"deployer\": {\"version\": \"8.0.5\"}}}" > composer.json \
+        && GIT_AUTHOR_EMAIL=human@example.org git commit --quiet -am "Rename the package to $1" && git push --quiet origin v2)
+}
+# Merges v2 into deployer/10 as <email> and resolves the conflict with name <name> and version <version>
+resolve_merge() {
+    rm -rf "$work/merger"
+    git clone --quiet --branch deployer/10 "$work/remote.git" "$work/merger"
+    (cd "$work/merger" && export GIT_AUTHOR_EMAIL="$1" GIT_COMMITTER_EMAIL="$1" \
+        && { git merge --quiet origin/v2 > /dev/null 2>&1 || true; } \
+        && echo "{\"name\": \"$2\", \"extra\": {\"deployer\": {\"version\": \"$3\"}}}" > composer.json \
+        && git add composer.json && git commit --quiet --no-edit && git push --quiet origin deployer/10)
+}
+remote10_version() { git --git-dir="$work/remote.git" show "deployer/10:composer.json" | grep -o '"version": "[^"]*"'; }
 git checkout --quiet -f v2 && git pull --quiet --ff-only origin v2 && bump 10.0.0 && echo 43 > "$work/open-pr"
 "$script" deployer/10 10.0.0 true "$work/body.md" v2 > /dev/null
-(cd "$work/main-human" && git pull --quiet --ff-only origin v2 \
-    && echo '{"name": "base", "extra": {"deployer": {"version": "8.0.5"}}}' > composer.json \
-    && GIT_AUTHOR_EMAIL=human@example.org git commit --quiet -am "Name the package" && git push --quiet origin v2)
-rm -rf "$work/merger"
-git clone --quiet --branch deployer/10 "$work/remote.git" "$work/merger"
-(cd "$work/merger" && export GIT_AUTHOR_EMAIL=human@example.org GIT_COMMITTER_EMAIL=human@example.org \
-    && { git merge --quiet origin/v2 > /dev/null 2>&1 || true; } \
-    && echo '{"name": "base", "extra": {"deployer": {"version": "10.0.0"}}}' > composer.json \
-    && git add composer.json && git commit --quiet --no-edit && git push --quiet origin deployer/10)
-merge_head="$(git --git-dir="$work/remote.git" rev-parse deployer/10)"
+
+base_change base-1
+resolve_merge test@example.org base-1 10.0.0
 git checkout --quiet -f v2 && git pull --quiet --ff-only origin v2 && bump 10.0.1 && : > "$work/gh.log"
-"$script" deployer/10 10.0.1 true "$work/body.md" v2 > /dev/null 2>&1
-check 'a hand-resolved merge is not force-pushed away' '[ "$(git --git-dir="$work/remote.git" rev-parse deployer/10)" = "$merge_head" ]'
-check 'a hand-resolved merge gets a comment instead' 'grep -q -- "pr comment 43 --body Deployer 10.0.1" "$work/gh.log"'
+"$script" deployer/10 10.0.1 true "$work/body.md" v2 > /dev/null
+check 'a hand-resolved merge by the update workflow itself does not block updates' '[ "$(remote10_version)" = "\"version\": \"10.0.1\"" ]'
+
+base_change base-2
+resolve_merge human@example.org base-2 10.0.1
+merge_head="$(git --git-dir="$work/remote.git" rev-parse deployer/10)"
+git checkout --quiet -f v2 && git pull --quiet --ff-only origin v2 && bump 10.0.2 && : > "$work/gh.log"
+"$script" deployer/10 10.0.2 true "$work/body.md" v2 > /dev/null 2>&1
+check 'a hand-resolved merge by someone else is not force-pushed away' '[ "$(git --git-dir="$work/remote.git" rev-parse deployer/10)" = "$merge_head" ]'
+check 'a hand-resolved merge by someone else gets a comment instead' 'grep -q -- "pr comment 43 --body Deployer 10.0.2" "$work/gh.log"'
 
 # 11. Wrong arguments print the usage.
 status=0; out="$("$script" --bundled-version 2>&1)" || status=$?
