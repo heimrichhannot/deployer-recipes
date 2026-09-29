@@ -104,31 +104,37 @@ final class DeployerUpdate
      */
     public static function insertRelease(string $changelog, string $version, string $date, string $deployerVersion): string
     {
-        $unreleased = \strpos($changelog, self::UNRELEASED);
-        $offset = self::nextSection($changelog, $unreleased === false ? 0 : $unreleased + \strlen(self::UNRELEASED));
+        return self::withLf($changelog, static function (string $changelog) use ($version, $date, $deployerVersion): string {
+            $unreleased = \strpos($changelog, self::UNRELEASED);
+            $offset = self::nextSection($changelog, $unreleased === false ? 0 : $unreleased + \strlen(self::UNRELEASED));
 
-        return self::insertSection($changelog, $offset, "## [$version] - $date\n\n### Changed\n\n" . self::bundleLine($deployerVersion) . "\n");
+            return self::insertSection($changelog, $offset, "## [$version] - $date\n\n### Changed\n\n" . self::bundleLine($deployerVersion) . "\n");
+        });
     }
 
     /** Adds the bundle line to the "### Changed" list of [Unreleased], creating the heading and list if needed. */
     public static function addUnreleasedEntry(string $changelog, string $deployerVersion): string
     {
-        if (!\str_contains($changelog, self::UNRELEASED)) {
-            $changelog = self::insertSection($changelog, self::nextSection($changelog, 0), self::UNRELEASED . "\n");
-        }
+        return self::withLf($changelog, static function (string $changelog) use ($deployerVersion): string {
+            if (!\str_contains($changelog, self::UNRELEASED)) {
+                $changelog = self::insertSection($changelog, self::nextSection($changelog, 0), self::UNRELEASED . "\n");
+            }
 
-        [$before, $body, $after] = self::splitUnreleased($changelog);
-        $line = self::bundleLine($deployerVersion);
+            [$before, $body, $after] = self::splitUnreleased($changelog);
+            $line = self::bundleLine($deployerVersion);
 
-        if (\preg_match('/^### Changed\n\n/m', $body)) {
-            $body = \preg_replace('/^### Changed\n\n/m', "### Changed\n\n$line\n", $body, 1);
-        } else {
-            $body = "\n\n### Changed\n\n$line\n" . (\trim($body) === '' ? '' : "\n" . \ltrim($body, "\n"));
-        }
+            // The heading and any blank lines after it, whether or not the list follows directly
+            $changedHeading = '/^### Changed[ \t]*\n(?:[ \t]*\n)*/m';
+            if (\preg_match($changedHeading, $body)) {
+                $body = \preg_replace($changedHeading, "### Changed\n\n$line\n", $body, 1);
+            } else {
+                $body = "\n\n### Changed\n\n$line\n" . (\trim($body) === '' ? '' : "\n" . \ltrim($body, "\n"));
+            }
 
-        $body = \rtrim($body, "\n") . "\n";
+            $body = \rtrim($body, "\n") . "\n";
 
-        return $before . $body . ($after === '' ? '' : "\n" . $after);
+            return $before . $body . ($after === '' ? '' : "\n" . $after);
+        });
     }
 
     /**
@@ -168,6 +174,20 @@ final class DeployerUpdate
             'recipes_version' => $mode === 'release' ? self::nextRecipesVersion($latestRecipesTag, $currentDeployer, $sameMajor) : '',
             'next_recipes_major' => (string) ($recipesMajor + 1),
         ];
+    }
+
+    /**
+     * Runs $edit on $changelog with LF line endings and restores CRLF endings afterwards if the changelog used them.
+     *
+     * @param callable(string): string $edit
+     */
+    private static function withLf(string $changelog, callable $edit): string
+    {
+        if (!\str_contains($changelog, "\r\n")) {
+            return $edit($changelog);
+        }
+
+        return \str_replace("\n", "\r\n", $edit(\str_replace("\r\n", "\n", $changelog)));
     }
 
     /** @return array{string, string, string} text up to and including the heading, the section body, the rest starting at the next "## " */

@@ -136,6 +136,45 @@ final class DeployerUpdateTest extends TestCase
         );
     }
 
+    public function testAddUnreleasedEntryFindsChangedHeadingWithoutBlankLine(): void
+    {
+        $changelog = self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Changed\n- Something\n\n## [2.3.1] - 2026-10-01\n\n- z\n";
+
+        self::assertSame(
+            self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Changed\n\n"
+            . "- Bundle Deployer 9.0.0 ([release notes](https://github.com/deployphp/deployer/releases/tag/v9.0.0)).\n"
+            . "- Something\n\n## [2.3.1] - 2026-10-01\n\n- z\n",
+            DeployerUpdate::addUnreleasedEntry($changelog, '9.0.0'),
+        );
+    }
+
+    public function testAddUnreleasedEntryKeepsCrlfLineEndings(): void
+    {
+        $changelog = \str_replace("\n", "\r\n", self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Changed\n\n- Something\n\n## [2.3.1] - 2026-10-01\n\n- z\n");
+
+        $result = DeployerUpdate::addUnreleasedEntry($changelog, '9.0.0');
+
+        self::assertSame(1, \substr_count($result, '### Changed'));
+        self::assertSame(
+            \str_replace("\n", "\r\n", self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Changed\n\n"
+            . "- Bundle Deployer 9.0.0 ([release notes](https://github.com/deployphp/deployer/releases/tag/v9.0.0)).\n"
+            . "- Something\n\n## [2.3.1] - 2026-10-01\n\n- z\n"),
+            $result,
+        );
+    }
+
+    public function testInsertReleaseKeepsCrlfLineEndings(): void
+    {
+        $changelog = \str_replace("\n", "\r\n", self::CHANGELOG_HEAD . "## [Unreleased]\n\n## [2.3.1] - 2026-10-01\n\n- z\n");
+
+        self::assertSame(
+            \str_replace("\n", "\r\n", self::CHANGELOG_HEAD . "## [Unreleased]\n\n## [2.3.2] - 2026-10-02\n\n### Changed\n\n"
+            . "- Bundle Deployer 8.0.6 ([release notes](https://github.com/deployphp/deployer/releases/tag/v8.0.6)).\n\n"
+            . "## [2.3.1] - 2026-10-01\n\n- z\n"),
+            DeployerUpdate::insertRelease($changelog, '2.3.2', '2026-10-02', '8.0.6'),
+        );
+    }
+
     public function testAddUnreleasedEntryCreatesChangedList(): void
     {
         $changelog = self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Fixed\n\n- y\n\n## [2.3.1] - 2026-10-01\n\n- z\n";
