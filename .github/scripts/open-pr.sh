@@ -8,9 +8,11 @@ set -euo pipefail
 
 branch=$1 version=$2 draft=$3 body_file=$4 base=$5
 title="Bundle Deployer $version"
+scripts="$(cd "$(dirname "$0")" && pwd)"
 
+# extra.deployer.version of the composer.json on stdin
 bundled_version() {
-    php -r 'echo json_decode(stream_get_contents(STDIN), true)["extra"]["deployer"]["version"] ?? "";'
+    php "$scripts/deployer-update.php" bundled-version
 }
 
 open_pr_number() {

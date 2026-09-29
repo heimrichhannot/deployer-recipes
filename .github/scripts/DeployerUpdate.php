@@ -30,7 +30,7 @@ final class DeployerUpdate
 
     public static function major(string $version): int
     {
-        if (!\preg_match('/^v?(\d+)\./', $version, $match)) {
+        if (!\preg_match('/^v?(\d+)\.\d+/', $version, $match)) {
             throw new \InvalidArgumentException(\sprintf('Not a version: "%s"', $version));
         }
 

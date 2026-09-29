@@ -10,13 +10,26 @@
  *       Adds a release section to CHANGELOG.md, below [Unreleased] if there is one.
  *   php .github/scripts/deployer-update.php unreleased-changelog <deployer-version>
  *       Adds a "Bundle Deployer" entry to the [Unreleased] section of CHANGELOG.md.
+ *   php .github/scripts/deployer-update.php bundled-version < composer.json
+ *       Prints extra.deployer.version of the composer.json on stdin, or nothing if it has none.
+ *       Works from any directory.
  */
 
 use HeimrichHannot\DeployerRecipes\Ci\DeployerUpdate;
 
 require __DIR__ . '/DeployerUpdate.php';
 
-$composer = \json_decode(\file_get_contents('composer.json'), true, flags: \JSON_THROW_ON_ERROR);
+/** @return array<string, mixed> */
+function composer(string $json): array
+{
+    return \json_decode($json, true, flags: \JSON_THROW_ON_ERROR);
+}
+
+/** @param array<string, mixed> $composer */
+function bundledVersion(array $composer): ?string
+{
+    return $composer['extra']['deployer']['version'] ?? null;
+}
 
 /** @return list<string> output lines of a git command; throws if it fails */
 function git(string $arguments): array
@@ -31,6 +44,7 @@ function git(string $arguments): array
 
 switch ($argv[1] ?? '') {
     case 'plan':
+        $composer = composer(\file_get_contents('composer.json'));
         $recipesTags = git('tag --list');
         // The major version this branch releases, independent of the branch name
         $recipesMajor = $composer['extra']['deployer']['recipes-major'] ?? null;
@@ -39,7 +53,7 @@ switch ($argv[1] ?? '') {
         }
         $latestTag = DeployerUpdate::latestRecipesTag($recipesTags, $recipesMajor);
         $plan = DeployerUpdate::plan(
-            $composer['extra']['deployer']['version'] ?? throw new \RuntimeException('composer.json has no extra.deployer.version'),
+            bundledVersion($composer) ?? throw new \RuntimeException('composer.json has no extra.deployer.version'),
             $recipesMajor,
             \preg_split('/\R/', \stream_get_contents(\STDIN), -1, \PREG_SPLIT_NO_EMPTY),
             $recipesTags,
@@ -58,7 +72,11 @@ switch ($argv[1] ?? '') {
         \file_put_contents('CHANGELOG.md', DeployerUpdate::addUnreleasedEntry(\file_get_contents('CHANGELOG.md'), $argv[2]));
         break;
 
+    case 'bundled-version':
+        echo bundledVersion(composer(\stream_get_contents(\STDIN))) ?? '';
+        break;
+
     default:
-        \fwrite(\STDERR, "Usage: deployer-update.php plan|release-changelog <recipes-version> <deployer-version>|unreleased-changelog <deployer-version>\n");
+        \fwrite(\STDERR, "Usage: deployer-update.php plan|release-changelog <recipes-version> <deployer-version>|unreleased-changelog <deployer-version>|bundled-version\n");
         exit(2);
 }

@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-expected="Deployer $(php -r 'echo json_decode(file_get_contents("composer.json"), true)["extra"]["deployer"]["version"];')"
+expected="Deployer $(php .github/scripts/deployer-update.php bundled-version < composer.json)"
 actual="$(php bin/dep --version)"
 if [ "$actual" != "$expected" ]; then
     echo "FAIL: expected '$expected', got '$actual'" >&2
