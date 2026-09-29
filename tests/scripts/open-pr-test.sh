@@ -159,6 +159,7 @@ resolve_merge() {
     git clone --quiet --branch deployer/10 "$work/remote.git" "$work/merger"
     (cd "$work/merger" && export GIT_AUTHOR_EMAIL="$1" GIT_COMMITTER_EMAIL="$1" \
         && { git merge --quiet origin/v2 > /dev/null 2>&1 || true; } \
+        && { git rev-parse -q --verify MERGE_HEAD > /dev/null || { echo "FAIL: merge into deployer/10 did not conflict"; exit 1; }; } \
         && echo "{\"name\": \"$2\", \"extra\": {\"deployer\": {\"version\": \"$3\"}}}" > composer.json \
         && git add composer.json && git commit --quiet --no-edit && git push --quiet origin deployer/10)
 }
@@ -185,6 +186,22 @@ status=0; out="$("$script" --bundled-version 2>&1)" || status=$?
 check '--bundled-version without a branch prints the usage' '[ "$status" = 2 ] && grep -q "^Usage:" <<<"$out"'
 status=0; out="$("$script" deployer/9 2>&1)" || status=$?
 check 'too few arguments print the usage' '[ "$status" = 2 ] && grep -q "^Usage:" <<<"$out"'
+
+# 12. Someone amended the update workflow's commit: the author is still the workflow, but the committer is not,
+#     so the amended commit is someone else's work.
+git checkout --quiet -f v2 && git pull --quiet --ff-only origin v2 && bump 11.0.0 && echo 44 > "$work/open-pr"
+"$script" deployer/11 11.0.0 true "$work/body.md" v2 > /dev/null
+rm -rf "$work/amender"
+git clone --quiet --branch deployer/11 "$work/remote.git" "$work/amender"
+(cd "$work/amender" && echo fix > recipe-fix.php && git add recipe-fix.php \
+    && GIT_COMMITTER_EMAIL=human@example.org git commit --quiet --amend --no-edit \
+    && git push --quiet --force origin deployer/11)
+amended_head="$(git --git-dir="$work/remote.git" rev-parse deployer/11)"
+check 'the amended commit keeps the workflow as author' '[ "$(git --git-dir="$work/remote.git" show --no-patch --format="%ae %ce" deployer/11)" = "test@example.org human@example.org" ]'
+git checkout --quiet -f v2 && bump 11.0.1 && : > "$work/gh.log"
+"$script" deployer/11 11.0.1 true "$work/body.md" v2 > /dev/null 2>&1
+check 'a commit amended by someone else is not force-pushed away' '[ "$(git --git-dir="$work/remote.git" rev-parse deployer/11)" = "$amended_head" ]'
+check 'a commit amended by someone else gets a comment instead' 'grep -q -- "pr comment 44 --body Deployer 11.0.1" "$work/gh.log"'
 
 # 4. Non-draft mode omits --draft.
 git checkout --quiet -f v2 && bump 8.0.6 && rm -f "$work/open-pr" && : > "$work/gh.log"

@@ -3,9 +3,10 @@
 #        open-pr.sh --bundled-version <branch>
 # Commits the working tree to <branch>, pushes it and opens or updates its pull request against <base-branch>.
 # Does nothing if <branch> on origin already bundles <deployer-version>, so daily runs don't churn the PR.
-# Never overwrites commits made by anyone else (e.g. recipe fixes on a Deployer major branch): comments on the
-# open pull request once per version instead, and fails if there is none. Clean merges (e.g. from GitHub's
-# "Update branch") don't count; other people's merges with changes of their own, like a resolved conflict, do.
+# Never overwrites commits or merges authored or committed by anyone else (e.g. recipe fixes on a Deployer major
+# branch, or an amended update commit): comments on the open pull request once per version instead, and fails if
+# there is none. Clean merges (e.g. from GitHub's "Update branch") don't count; other people's merges with changes
+# of their own, like a resolved conflict, do.
 # Fails if origin cannot be read, rather than treating the branch as missing.
 # --bundled-version prints the Deployer version bundled on origin's <branch>, or nothing if there is no such branch
 # or its composer.json is missing or unreadable.
@@ -72,13 +73,14 @@ if [ -n "$remote" ]; then
 
     git fetch --quiet origin "+refs/heads/$base:refs/remotes/origin/$base"
     self="$(git var GIT_AUTHOR_IDENT | sed -E 's/^.*<([^>]*)>.*$/\1/')"
+    # Author and committer both count: amending or rebasing the update commit keeps its author.
     # grep without -q reads all of git log's output, so pipefail can't see a SIGPIPE
-    foreign="$(git log --no-merges --format=%ae "refs/remotes/origin/$base..$remote" | { grep -vxF "$self" || true; })"
+    foreign="$(git log --no-merges --format='%ae%n%ce' "refs/remotes/origin/$base..$remote" | { grep -vxF "$self" || true; })"
     # Someone else's merge only counts if it changed something itself: --cc shows nothing for a clean merge
     for merge in $(git rev-list --merges "refs/remotes/origin/$base..$remote"); do
-        author="$(git show --no-patch --format=%ae "$merge")"
-        if [ "$author" != "$self" ] && [ -n "$(git show --cc --format= "$merge")" ]; then
-            foreign+="$author"
+        people="$(git show --no-patch --format='%ae %ce' "$merge")"
+        if [ "$people" != "$self $self" ] && [ -n "$(git show --cc --format= "$merge")" ]; then
+            foreign+="$people"
         fi
     done
     if [ -n "$foreign" ]; then
