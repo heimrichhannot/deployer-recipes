@@ -131,14 +131,16 @@ final class DeployerUpdate
             [$before, $body, $after] = self::splitUnreleased($changelog);
             $line = self::bundleLine($deployerVersion);
 
-            // The heading and any blank lines after it, whether or not the list follows directly,
-            // also on the last line; \r for CRLF lines in a changelog with mixed line endings
-            $changedHeading = '/^### Changed[ \t\r]*(?:\n|\z)(?:[ \t\r]*\n)*/m';
-            if (\preg_match($changedHeading, $body)) {
-                $body = \preg_replace($changedHeading, "### Changed\n\n$line\n", $body, 1);
-                // An empty list: keep the blank line before the next heading
-                $body = \preg_replace('/^(' . \preg_quote($line, '/') . ')\n(?=#)/m', "\$1\n\n", $body, 1);
-            } else {
+            // The heading and any blank lines after it, whether or not the list follows directly, also on the last line.
+            // If a heading follows instead of a list item, the list was empty: keep a blank line before that heading.
+            $body = \preg_replace_callback(
+                '/^### Changed[ \t]*(?:\n|\z)(?:[ \t]*\n)*(?=(#)?)/m',
+                static fn (array $match): string => "### Changed\n\n$line\n" . (($match[1] ?? '') === '#' ? "\n" : ''),
+                $body,
+                1,
+                $count,
+            );
+            if ($count === 0) {
                 $body = "\n\n### Changed\n\n$line\n" . (\trim($body) === '' ? '' : "\n" . \ltrim($body, "\n"));
             }
 
@@ -188,18 +190,18 @@ final class DeployerUpdate
     }
 
     /**
-     * Runs $edit on $changelog with LF line endings and restores CRLF endings afterwards if the changelog used only those.
-     * A changelog with mixed line endings is edited as it is, so its existing lines keep their endings.
+     * Runs $edit on $changelog with LF line endings, and converts the result to CRLF if most of the changelog's
+     * line breaks were CRLF. Stray lines with the other ending get the main one.
      *
      * @param callable(string): string $edit
      */
     private static function withLf(string $changelog, callable $edit): string
     {
-        if (!\str_contains($changelog, "\r\n") || \preg_match('/(?<!\r)\n/', $changelog)) {
-            return $edit($changelog);
-        }
+        $crlf = \substr_count($changelog, "\r\n");
+        $lf = \substr_count($changelog, "\n") - $crlf;
+        $result = $edit(\str_replace("\r\n", "\n", $changelog));
 
-        return \str_replace("\n", "\r\n", $edit(\str_replace("\r\n", "\n", $changelog)));
+        return $crlf > $lf ? \str_replace("\n", "\r\n", $result) : $result;
     }
 
     /** @return array{string, string, string} text up to and including the heading, the section body, the rest starting at the next "## " */

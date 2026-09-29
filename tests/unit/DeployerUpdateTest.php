@@ -205,15 +205,40 @@ final class DeployerUpdateTest extends TestCase
         );
     }
 
-    public function testAddUnreleasedEntryLeavesMixedLineEndingsAlone(): void
+    public function testAddUnreleasedEntryGivesAStrayCrlfLineTheMainLineEnding(): void
     {
         $changelog = self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Changed\n\n- Pasted\r\n\n## [2.3.1] - 2026-10-01\n\n- z\n";
 
         self::assertSame(
             self::CHANGELOG_HEAD . "## [Unreleased]\n\n### Changed\n\n"
             . "- Bundle Deployer 9.0.0 ([release notes](https://github.com/deployphp/deployer/releases/tag/v9.0.0)).\n"
-            . "- Pasted\r\n\n## [2.3.1] - 2026-10-01\n\n- z\n",
+            . "- Pasted\n\n## [2.3.1] - 2026-10-01\n\n- z\n",
             DeployerUpdate::addUnreleasedEntry($changelog, '9.0.0'),
+        );
+    }
+
+    public function testAddUnreleasedEntryGivesAStrayLfLineTheMainLineEnding(): void
+    {
+        // CRLF except for the first line
+        $changelog = "# Changelog\n" . \str_replace("\n", "\r\n", "\nAll notable changes.\n\n## [Unreleased]\n\n### Fixed\n\n- y\n\n## [2.3.1] - 2026-10-01\n\n- z\n");
+
+        self::assertSame(
+            \str_replace("\n", "\r\n", "# Changelog\n\nAll notable changes.\n\n## [Unreleased]\n\n### Changed\n\n"
+            . "- Bundle Deployer 9.0.0 ([release notes](https://github.com/deployphp/deployer/releases/tag/v9.0.0)).\n\n"
+            . "### Fixed\n\n- y\n\n## [2.3.1] - 2026-10-01\n\n- z\n"),
+            DeployerUpdate::addUnreleasedEntry($changelog, '9.0.0'),
+        );
+    }
+
+    public function testInsertReleaseGivesAStrayLfLineTheMainLineEnding(): void
+    {
+        $changelog = "# Changelog\n" . \str_replace("\n", "\r\n", "\nAll notable changes.\n\n## [Unreleased]\n\n## [2.3.1] - 2026-10-01\n\n- z\n");
+
+        self::assertSame(
+            \str_replace("\n", "\r\n", "# Changelog\n\nAll notable changes.\n\n## [Unreleased]\n\n## [2.3.2] - 2026-10-02\n\n### Changed\n\n"
+            . "- Bundle Deployer 8.0.6 ([release notes](https://github.com/deployphp/deployer/releases/tag/v8.0.6)).\n\n"
+            . "## [2.3.1] - 2026-10-01\n\n- z\n"),
+            DeployerUpdate::insertRelease($changelog, '2.3.2', '2026-10-02', '8.0.6'),
         );
     }
 
