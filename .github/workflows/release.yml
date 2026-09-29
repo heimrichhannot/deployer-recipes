@@ -2,8 +2,10 @@ name: Release
 
 on:
   push:
+    # Recipes releases are always tagged as plain M.m.p (e.g. 2.0.1). The Deployer update workflow only looks at
+    # those tags, so any other tag must not become a release it doesn't know about.
     tags:
-      - '**'
+      - '[0-9]+.[0-9]+.[0-9]+'
   # Tags pushed by the Deployer update workflow don't trigger the push event, so it calls this workflow directly.
   workflow_call:
     inputs:

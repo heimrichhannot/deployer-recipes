@@ -50,6 +50,7 @@ A scheduled workflow bundles new Deployer releases:
 
 If the default branch has commits that are not part of the latest release, patch and minor updates arrive as a pull request
 instead, so the version number can be chosen by hand.
+Releases are tagged as plain `M.m.p` (e.g. `2.0.1`); other tags don't create a GitHub release and are ignored by the update workflow.
 
 The recipes refuse to run under a Deployer major version other than the bundled one.
 If you see "requires Deployer 8, but was loaded by Deployer …", run `vendor/bin/dep` instead of a globally installed `dep`.
