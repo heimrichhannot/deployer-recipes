@@ -42,7 +42,7 @@ check 'release-changelog works without an [Unreleased] heading' 'grep -qx "## \[
 
 git tag v2.0.9
 plan="$(printf 'v8.0.6\n' | php "$cli" plan)"
-check 'plan resolves a "v"-prefixed tag' 'grep -qx "latest_tag=v2.0.9" <<<"$plan" && grep -qx "recipes_version=v2.0.10" <<<"$plan"'
+check 'plan ignores a "v"-prefixed tag' 'grep -qx "latest_tag=2.0.1" <<<"$plan" && grep -qx "recipes_version=2.0.2" <<<"$plan"'
 git tag -d v2.0.9 > /dev/null
 
 cp composer.json composer.json.bak

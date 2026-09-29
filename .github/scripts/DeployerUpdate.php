@@ -9,6 +9,9 @@ final class DeployerUpdate
 {
     private const UNRELEASED = '## [Unreleased]';
 
+    /** Recipes tags are always plain M.m.p, without a "v" prefix */
+    private const RECIPES_TAG = '/^\d+\.\d+\.\d+$/';
+
     /**
      * @param list<string> $tags e.g. ["v8.0.5", "v8.1.0-rc.1", "8.0.4"]
      *
@@ -55,7 +58,6 @@ final class DeployerUpdate
 
     /**
      * Deployer patch release → recipes patch bump; Deployer minor release → recipes minor bump.
-     * Keeps a "v" prefix of $latestRecipesTag, so new tags match the existing ones.
      */
     public static function nextRecipesVersion(string $latestRecipesTag, string $currentDeployer, string $newDeployer): string
     {
@@ -66,39 +68,24 @@ final class DeployerUpdate
             throw new \InvalidArgumentException(\sprintf('Deployer %s is not newer than %s.', $newDeployer, $currentDeployer));
         }
 
-        [$major, $minor, $patch] = \array_map('intval', \explode('.', self::stableVersions([$latestRecipesTag])[0] ?? throw new \InvalidArgumentException(\sprintf('Not a version: "%s"', $latestRecipesTag))));
+        if (!\preg_match(self::RECIPES_TAG, $latestRecipesTag)) {
+            throw new \InvalidArgumentException(\sprintf('Not a recipes tag (M.m.p): "%s"', $latestRecipesTag));
+        }
+        [$major, $minor, $patch] = \array_map('intval', \explode('.', $latestRecipesTag));
         $minorChanged = \explode('.', $currentDeployer)[1] !== \explode('.', $newDeployer)[1];
 
-        $prefix = \str_starts_with(\trim($latestRecipesTag), 'v') ? 'v' : '';
-
-        return $prefix . ($minorChanged ? "$major." . ($minor + 1) . '.0' : "$major.$minor." . ($patch + 1));
+        return $minorChanged ? "$major." . ($minor + 1) . '.0' : "$major.$minor." . ($patch + 1);
     }
 
     /**
-     * @param list<string> $recipesTags tags of this repository
-     *
-     * @return string|null the tag as written, e.g. "v2.0.9", so it can be used as a git ref. If a version is tagged
-     *   both with and without "v", the spelling most stable tags in $recipesMajor use wins (unprefixed on a tie).
+     * @param list<string> $recipesTags tags of this repository; only plain M.m.p tags count, others such as
+     *   "v2.0.9" or "2.1.0-rc.1" are ignored
      */
     public static function latestRecipesTag(array $recipesTags, int $recipesMajor): ?string
     {
-        $tagsByVersion = [];
-        $prefixed = 0;
-        foreach ($recipesTags as $tag) {
-            $tag = \trim($tag);
-            $version = self::stableVersions([$tag])[0] ?? null;
-            if ($version !== null && self::major($version) === $recipesMajor) {
-                $tagsByVersion[$version][] = $tag;
-                $prefixed += \str_starts_with($tag, 'v') ? 1 : -1;
-            }
-        }
-        $latest = self::latestInMajor(self::stableVersions(\array_keys($tagsByVersion)), $recipesMajor);
-        if ($latest === null) {
-            return null;
-        }
-        $preferred = $prefixed > 0 ? "v$latest" : $latest;
+        $plain = \array_filter(\array_map('trim', $recipesTags), static fn (string $tag): bool => (bool) \preg_match(self::RECIPES_TAG, $tag));
 
-        return \in_array($preferred, $tagsByVersion[$latest], true) ? $preferred : $tagsByVersion[$latest][0];
+        return self::latestInMajor(self::stableVersions(\array_values($plain)), $recipesMajor);
     }
 
     public static function bundleLine(string $deployerVersion): string
