@@ -1,17 +1,59 @@
 # deployer-recipes
 Deployer recipes used at [Heimrich & Hannot GmbH](https://www.heimrich-hannot.de).
 
+## Requirements
+
+- PHP 8.3 or later in the environment you run `dep` in (e.g. your ddev web container)
+
+Deployer is bundled with this package (see [Bundled Deployer](#bundled-deployer)),
+so its dependencies never conflict with your project's.
+
+Projects that cannot use PHP 8.3 yet can stay on version 1.15 of this package, which uses Deployer 7:
+```shell
+composer require --dev heimrichhannot/deployer-recipes:~1.15.0
+```
+
+> [!NOTE]
+> Deployer 8 rewrote its TYPO3 recipe (own `deploy` task, optional rsync, different shared and writable directories).
+> Check your `deploy.php` against the [upstream recipe](https://deployer.org/docs/8.x/recipe/typo3) when upgrading a TYPO3 project.
+
 ## Install
 
-To use our recipes, require this package with composer.
 ```shell
 composer require --dev heimrichhannot/deployer-recipes
 ```
 
-It is _not_ required to install [Deployer](https://deployer.org/) separately, but you may do so with the following command.
+This installs Deployer as `vendor/bin/dep`:
 ```shell
-composer require --dev deployer/deployer
+php vendor/bin/dep deploy production
 ```
+
+Do not require `deployer/deployer` alongside this package; the two conflict.
+When upgrading from a version that used it, remove it first:
+```shell
+composer remove --dev deployer/deployer
+```
+
+## Bundled Deployer
+
+This package ships the official Deployer phar, verified against the Deployer sign key.
+The bundled version is recorded in `composer.json` under `extra.deployer.version`; `vendor/bin/dep --version` prints it.
+`extra.deployer.recipes-major` names the major version of this package that the default branch releases.
+
+A scheduled workflow bundles new Deployer releases:
+
+| Deployer release        | Release of this package                  |
+|-------------------------|------------------------------------------|
+| patch (8.0.5 → 8.0.6)   | patch, released automatically            |
+| minor (8.0.x → 8.1.0)   | minor, released automatically            |
+| major (8 → 9)           | new major, prepared as a pull request    |
+
+If the default branch has commits that are not part of the latest release, patch and minor updates arrive as a pull request
+instead, so the version number can be chosen by hand.
+Releases are tagged as plain `M.m.p` (e.g. `2.0.1`); other tags don't create a GitHub release and are ignored by the update workflow.
+
+The recipes refuse to run under a Deployer major version other than the bundled one.
+If you see "requires Deployer 8, but was loaded by Deployer …", run `vendor/bin/dep` instead of a globally installed `dep`.
 
 ## Usage with Contao 4.13+
 
@@ -37,7 +79,7 @@ host('www.example.org')
     ->set('public_dir', 'public')
     ->set('deploy_path', '/usr/www/users/{{remote_user}}/contao/2026/production')
     ->set('bin/php', 'php84')
-    ->set('release_name', fn() => date('y-m-d_H-i-s'))
+    ->set('release_name', static fn (): string => date('y-m-d_H-i-s'))
     /** In case ACL is unavailable, use chmod instead */
     // ->set('writable_mode', 'chmod')
 ;
@@ -129,12 +171,12 @@ set('keep_releases', 10);
 ## Setup of multiple hosts or environments
 
 You may set up multiple hosts or environments by using the `host()` function multiple times.
-If you do not specify **[selectors](https://deployer.org/docs/7.x/selector)** (like labels) when running your deployer commands, you will be asked to choose which hosts to run that command for.
+If you do not specify **[selectors](https://deployer.org/docs/8.x/selector)** (like labels) when running your deployer commands, you will be asked to choose which hosts to run that command for.
 
 If you want to set common variables for all hosts, use the provided proxy function `broadcast()`, to call any number of methods on all previously defined hosts.
 
 > [!IMPORTANT]
-> Make sure to use **[labels](https://deployer.org/docs/7.x/selector)** to differentiate between environments when defining multiple hosts.
+> Make sure to use **[labels](https://deployer.org/docs/8.x/selector)** to differentiate between environments when defining multiple hosts.
 
 ```php
 host('stage')
@@ -156,7 +198,7 @@ broadcast()
     ->set('deploy_path', '/usr/www/users/{{remote_user}}/docroot/{{alias}}')
     ->set('bin/php', 'php82')
     ->set('bin/composer', 'composer')
-    ->set('release_name', fn() => date('y-m-d_H-i-s'))
+    ->set('release_name', static fn (): string => date('y-m-d_H-i-s'))
 ;
 ```
 
@@ -173,7 +215,7 @@ foreach (getHosts() as $host) {
         ->set('deploy_path', '/usr/www/users/{{remote_user}}/docroot/{{alias}}')
         ->set('bin/php', 'php82')
         ->set('bin/composer', 'composer')
-        ->set('release_name', fn() => date('y-m-d_H-i-s'))
+        ->set('release_name', static fn (): string => date('y-m-d_H-i-s'))
     ;
 }
 ```

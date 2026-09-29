@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Validate composer.json
+        run: composer validate --strict --no-check-lock
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress
+
+      - name: Unit tests
+        run: vendor/bin/phpunit
+
+      - name: Verify bundled phar signature
+        run: .github/scripts/verify-phar.sh bin/deployer.phar bin/deployer.phar.asc
+
+      - name: Smoke test
+        run: tests/smoke/run.sh
+
+      - name: Script tests
+        run: |
+          tests/scripts/verify-phar-test.sh
+          tests/scripts/deployer-update-cli-test.sh
+          tests/scripts/open-pr-test.sh
