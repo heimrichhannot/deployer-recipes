@@ -54,6 +54,12 @@ check 'plan explains a composer.json that is not an object' '[ "$status" != 0 ] 
 echo '{"extra": {"deployer": {"version": 8.1, "recipes-major": 2}}}' > composer.json
 status=0; out="$(printf "v8.0.6\n" | php "$cli" plan 2>&1)" || status=$?
 check 'plan explains a version that is not a string' '[ "$status" != 0 ] && grep -q "must be a string" <<<"$out"'
+echo '{' > composer.json
+status=0; out="$(printf "v8.0.6\n" | php "$cli" plan 2>&1)" || status=$?
+check 'plan explains a composer.json that is not valid JSON' '[ "$status" != 0 ] && grep -q "composer.json is not valid JSON" <<<"$out"'
+rm composer.json
+status=0; out="$(printf "v8.0.6\n" | php "$cli" plan 2>&1)" || status=$?
+check 'plan explains a missing composer.json' '[ "$status" != 0 ] && grep -q "Cannot read composer.json" <<<"$out"'
 mv composer.json.bak composer.json
 
 check 'bundled-version prints the version' '[ "$(php "$cli" bundled-version < composer.json)" = 8.0.5 ]'

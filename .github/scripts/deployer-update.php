@@ -46,7 +46,15 @@ function git(string $arguments): array
 
 switch ($argv[1] ?? '') {
     case 'plan':
-        $composer = composer(\file_get_contents('composer.json'));
+        $json = @\file_get_contents('composer.json');
+        if ($json === false) {
+            throw new \RuntimeException('Cannot read composer.json; run from the repository root.');
+        }
+        try {
+            $composer = composer($json);
+        } catch (\JsonException $e) {
+            throw new \RuntimeException("composer.json is not valid JSON: {$e->getMessage()}", previous: $e);
+        }
         if (!\is_array($composer)) {
             throw new \RuntimeException('composer.json must contain a JSON object');
         }
