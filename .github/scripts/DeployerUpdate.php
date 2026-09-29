@@ -77,20 +77,28 @@ final class DeployerUpdate
     /**
      * @param list<string> $recipesTags tags of this repository
      *
-     * @return string|null the tag as written, e.g. "v2.0.9", so it can be used as a git ref
+     * @return string|null the tag as written, e.g. "v2.0.9", so it can be used as a git ref. If a version is tagged
+     *   both with and without "v", the spelling most stable tags use wins (unprefixed on a tie).
      */
     public static function latestRecipesTag(array $recipesTags, int $recipesMajor): ?string
     {
         $tagsByVersion = [];
+        $prefixed = 0;
         foreach ($recipesTags as $tag) {
+            $tag = \trim($tag);
             $version = self::stableVersions([$tag])[0] ?? null;
             if ($version !== null) {
-                $tagsByVersion[$version] = \trim($tag);
+                $tagsByVersion[$version][] = $tag;
+                $prefixed += \str_starts_with($tag, 'v') ? 1 : -1;
             }
         }
         $latest = self::latestInMajor(self::stableVersions(\array_keys($tagsByVersion)), $recipesMajor);
+        if ($latest === null) {
+            return null;
+        }
+        $preferred = $prefixed > 0 ? "v$latest" : $latest;
 
-        return $latest === null ? null : $tagsByVersion[$latest];
+        return \in_array($preferred, $tagsByVersion[$latest], true) ? $preferred : $tagsByVersion[$latest][0];
     }
 
     public static function bundleLine(string $deployerVersion): string

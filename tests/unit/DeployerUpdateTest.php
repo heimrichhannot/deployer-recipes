@@ -72,6 +72,13 @@ final class DeployerUpdateTest extends TestCase
         self::assertSame('v2.0.9', DeployerUpdate::latestRecipesTag(['1.15.0', 'v2.0.8', 'v2.0.9'], 2));
     }
 
+    public function testLatestRecipesTagPrefersTheSpellingMostTagsUse(): void
+    {
+        self::assertSame('2.0.9', DeployerUpdate::latestRecipesTag(['1.15.0', '2.0.8', '2.0.9', 'v2.0.9'], 2));
+        self::assertSame('v2.0.9', DeployerUpdate::latestRecipesTag(['v2.0.8', 'v2.0.9', '2.0.9'], 2));
+        self::assertSame('2.0.9', DeployerUpdate::latestRecipesTag(['v2.0.9', '2.0.9'], 2), 'a tie picks the unprefixed tag');
+    }
+
     public function testInsertReleaseBelowEmptyUnreleased(): void
     {
         $changelog = self::CHANGELOG_HEAD . "## [Unreleased]\n\n## [2.3.1] - 2026-10-01\n\n### Fixed\n\n- y\n";
