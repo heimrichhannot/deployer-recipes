@@ -40,10 +40,9 @@ check 'plan ignores the CHANGELOG' 'grep -qx "mode=release" <<<"$plan" && grep -
 php "$cli" release-changelog 2.0.2 8.0.6
 check 'release-changelog works without an [Unreleased] heading' 'grep -qx "## \[2.0.2\] - $(date -u +%F)" CHANGELOG.md'
 
-git tag v2.0.9
+git commit --quiet -am "Release by hand" && git tag v2.0.9
 plan="$(printf 'v8.0.6\n' | php "$cli" plan)"
-check 'plan ignores a "v"-prefixed tag' 'grep -qx "latest_tag=2.0.1" <<<"$plan" && grep -qx "recipes_version=2.0.2" <<<"$plan"'
-git tag -d v2.0.9 > /dev/null
+check 'plan ignores a "v"-prefixed tag; its commits count as unreleased' 'grep -qx "latest_tag=2.0.1" <<<"$plan" && grep -qx "mode=pr" <<<"$plan"'
 
 cp composer.json composer.json.bak
 echo '{"extra": {"deployer": {"version": "8.0.5"}}}' > composer.json

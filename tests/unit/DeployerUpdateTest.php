@@ -54,6 +54,12 @@ final class DeployerUpdateTest extends TestCase
         DeployerUpdate::nextRecipesVersion('2.3.1', '8.0.5', '9.0.0');
     }
 
+    public function testNextRecipesVersionRejectsPrefixedTag(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        DeployerUpdate::nextRecipesVersion('v2.0.9', '8.0.5', '8.0.6');
+    }
+
     public function testNextRecipesVersionRejectsDowngrade(): void
     {
         $this->expectException(\InvalidArgumentException::class);
