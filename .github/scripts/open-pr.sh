@@ -73,13 +73,14 @@ if [ -n "$remote" ]; then
 
     git fetch --quiet origin "+refs/heads/$base:refs/remotes/origin/$base"
     self="$(git var GIT_AUTHOR_IDENT | sed -E 's/^.*<([^>]*)>.*$/\1/')"
+    self_committer="$(git var GIT_COMMITTER_IDENT | sed -E 's/^.*<([^>]*)>.*$/\1/')"
     # Author and committer both count: amending or rebasing the update commit keeps its author.
     # grep without -q reads all of git log's output, so pipefail can't see a SIGPIPE
-    foreign="$(git log --no-merges --format='%ae%n%ce' "refs/remotes/origin/$base..$remote" | { grep -vxF "$self" || true; })"
+    foreign="$(git log --no-merges --format='%ae %ce' "refs/remotes/origin/$base..$remote" | { grep -vxF "$self $self_committer" || true; })"
     # Someone else's merge only counts if it changed something itself: --cc shows nothing for a clean merge
     for merge in $(git rev-list --merges "refs/remotes/origin/$base..$remote"); do
         people="$(git show --no-patch --format='%ae %ce' "$merge")"
-        if [ "$people" != "$self $self" ] && [ -n "$(git show --cc --format= "$merge")" ]; then
+        if [ "$people" != "$self $self_committer" ] && [ -n "$(git show --cc --format= "$merge")" ]; then
             foreign+="$people"
         fi
     done
@@ -94,7 +95,7 @@ if [ -n "$remote" ]; then
         marker="<!-- deployer-update: $version -->"
         comments="$(gh pr view "$number" --json comments --jq '.comments[].body')"
         if ! grep -qF "$marker" <<<"$comments"; then
-            gh pr comment "$number" --body "Deployer $version was released. This branch has commits that were not made by the update workflow, so it was not updated automatically. To update it, run \`.github/scripts/fetch-phar.sh $version bin\` and \`composer config extra.deployer.version $version\` on this branch. $marker"
+            gh pr comment "$number" --body "Deployer $version was released. This branch has commits that were not made by the update workflow, so it was not updated automatically. To update it, run \`.github/scripts/fetch-phar.sh $version bin\` and \`composer config extra.deployer.version $version\` on this branch. If this branch has no changes of your own (for example after *Update with rebase*), delete it; the next run recreates it. $marker"
         fi
         exit 0
     fi

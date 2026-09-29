@@ -110,6 +110,7 @@ git checkout --quiet -f v2 && bump 9.0.5 && : > "$work/gh.log"
 "$script" deployer/9 9.0.5 true "$work/body.md" v2 > /dev/null 2>&1
 check 'branch with foreign commits is not force-pushed' '[ "$(remote_head)" = "$human_head" ]'
 check 'branch with foreign commits gets a comment instead' 'grep -q -- "pr comment 42 --body Deployer 9.0.5" "$work/gh.log"'
+check 'the comment explains how to get automatic updates back' 'grep -q "delete it; the next run recreates it" "$work/gh.log"'
 
 # 6. Same situation on the next run: no second comment, even if the PR has so many comments that
 #    reading them stops early (SIGPIPE under pipefail).
@@ -202,6 +203,13 @@ git checkout --quiet -f v2 && bump 11.0.1 && : > "$work/gh.log"
 "$script" deployer/11 11.0.1 true "$work/body.md" v2 > /dev/null 2>&1
 check 'a commit amended by someone else is not force-pushed away' '[ "$(git --git-dir="$work/remote.git" rev-parse deployer/11)" = "$amended_head" ]'
 check 'a commit amended by someone else gets a comment instead' 'grep -q -- "pr comment 44 --body Deployer 11.0.1" "$work/gh.log"'
+
+# 13. The update workflow's author and committer identities differ: its own commits are still its own.
+git checkout --quiet -f v2 && bump 12.0.0 && rm -f "$work/open-pr"
+GIT_COMMITTER_EMAIL=committer@example.org "$script" deployer/12 12.0.0 true "$work/body.md" v2 > /dev/null
+git checkout --quiet -f v2 && bump 12.0.1 && : > "$work/gh.log"
+GIT_COMMITTER_EMAIL=committer@example.org "$script" deployer/12 12.0.1 true "$work/body.md" v2 > /dev/null 2>&1 || true
+check 'separate author and committer identities do not block updates' '[ "$(git --git-dir="$work/remote.git" show "deployer/12:composer.json" | grep -o "\"version\": \"[^\"]*\"")" = "\"version\": \"12.0.1\"" ]'
 
 # 4. Non-draft mode omits --draft.
 git checkout --quiet -f v2 && bump 8.0.6 && rm -f "$work/open-pr" && : > "$work/gh.log"
