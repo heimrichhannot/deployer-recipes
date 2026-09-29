@@ -83,7 +83,7 @@ task('db:pull:contao', static function () {
     if (!$cmdDBRestore) {
         throw new ConfigurationException('local_cmd_db_restore is not set');
     }
-    // timeout: 0 = no timeout (null falls back to default_timeout)
+    // timeout: 0 = no timeout
     runLocally('{{local_cmd_db_restore}}', timeout: 0);
     info('Database cloned successfully');
 
@@ -265,7 +265,7 @@ task('db:pull:mysql', static function () {
         return;
     }
 
-    // timeout: 0 = no timeout (null falls back to default_timeout)
+    // timeout: 0 = no timeout
     runLocally("mysql $localConn < var/backups/$filename", timeout: 0);
     info('Database cloned successfully');
 
@@ -278,7 +278,7 @@ task('db:pull:mysql', static function () {
     }
 
     if (askConfirmation('Run local database migrations now?', true)) {
-        // timeout: 0 = no timeout (null falls back to default_timeout)
+        // timeout: 0 = no timeout
         runLocally('{{local/bin/contao-console}} contao:migrate --no-backup {{console_options}}', timeout: 0);
     }
 })->once();
@@ -348,7 +348,7 @@ task('db:push:contao', static function () {
     if (!$cmdDBRestore) {
         throw new ConfigurationException('local_cmd_db_restore is not set');
     }
-    // timeout: 0 = no timeout (null falls back to default_timeout)
+    // timeout: 0 = no timeout; for run(), null falls back to default_timeout
     run("{{bin/console}} contao:backup:restore $filename {{console_options}}", timeout: 0);
     info('Database pushed successfully');
 
@@ -408,7 +408,7 @@ task('db:push:mysql', static function () {
     info('Database backup uploaded successfully');
 
     if (askConfirmation('Import local database dump into remote database?', true)) {
-        // timeout: 0 = no timeout (null falls back to default_timeout)
+        // timeout: 0 = no timeout; for run(), null falls back to default_timeout
         run("mysql $remoteConn < {{current_path}}/var/backups/$filename", timeout: 0);
         info('Database pushed successfully');
     }
@@ -442,7 +442,7 @@ task('db:import:local', static function () {
         throw new \RuntimeException("File not found: var/backups/$filename");
     }
 
-    // timeout: 0 = no timeout (null falls back to default_timeout)
+    // timeout: 0 = no timeout
     runLocally("mysql $localConn < var/backups/$filename", timeout: 0);
     info('Database imported successfully');
 })->once();
@@ -469,7 +469,7 @@ task('db:import:remote', static function () {
         throw new \RuntimeException("File not found: var/backups/$filename");
     }
 
-    // timeout: 0 = no timeout (null falls back to default_timeout)
+    // timeout: 0 = no timeout; for run(), null falls back to default_timeout
     run("mysql $conn < {{current_path}}/var/backups/$filename", timeout: 0);
     info('Database imported successfully');
 })->once();

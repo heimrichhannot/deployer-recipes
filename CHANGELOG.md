@@ -20,8 +20,8 @@ All notable changes to this project will be documented in this file.
 - Require PHP 8.3 or later. Projects no longer need Symfony 7.4 or later, so Contao 4.13 and 5.3 projects can install this package.
   Projects on older PHP versions can stay on `~1.15.0`, which uses Deployer 7.
 - Converted `run()`/`runLocally()` option arrays to named arguments, as required by Deployer 8.
-- Database imports and restores (`db:pull`, `db:push`, `db:import:*`) and the local migration after `db:pull` run without a timeout again;
-  with Deployer 8, `timeout: null` would fall back to the default timeout of 300 seconds.
+- Database restores on the remote host (`db:push`, `db:import:remote`) run without a timeout again;
+  with Deployer 8, `run()` with `timeout: null` falls back to the default timeout of 300 seconds.
 
 ### Fixed
 
