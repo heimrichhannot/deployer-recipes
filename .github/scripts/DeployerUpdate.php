@@ -78,7 +78,7 @@ final class DeployerUpdate
      * @param list<string> $recipesTags tags of this repository
      *
      * @return string|null the tag as written, e.g. "v2.0.9", so it can be used as a git ref. If a version is tagged
-     *   both with and without "v", the spelling most stable tags use wins (unprefixed on a tie).
+     *   both with and without "v", the spelling most stable tags in $recipesMajor use wins (unprefixed on a tie).
      */
     public static function latestRecipesTag(array $recipesTags, int $recipesMajor): ?string
     {
@@ -87,7 +87,7 @@ final class DeployerUpdate
         foreach ($recipesTags as $tag) {
             $tag = \trim($tag);
             $version = self::stableVersions([$tag])[0] ?? null;
-            if ($version !== null) {
+            if ($version !== null && self::major($version) === $recipesMajor) {
                 $tagsByVersion[$version][] = $tag;
                 $prefixed += \str_starts_with($tag, 'v') ? 1 : -1;
             }

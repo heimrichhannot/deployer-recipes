@@ -77,6 +77,7 @@ final class DeployerUpdateTest extends TestCase
         self::assertSame('2.0.9', DeployerUpdate::latestRecipesTag(['1.15.0', '2.0.8', '2.0.9', 'v2.0.9'], 2));
         self::assertSame('v2.0.9', DeployerUpdate::latestRecipesTag(['v2.0.8', 'v2.0.9', '2.0.9'], 2));
         self::assertSame('2.0.9', DeployerUpdate::latestRecipesTag(['v2.0.9', '2.0.9'], 2), 'a tie picks the unprefixed tag');
+        self::assertSame('v2.0.1', DeployerUpdate::latestRecipesTag(['1.0.0', '1.0.1', '1.0.2', '1.1.0', 'v2.0.0', 'v2.0.1', '2.0.1'], 2), 'only tags in the recipes major count');
     }
 
     public function testInsertReleaseBelowEmptyUnreleased(): void
