@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-09-29
+
 ### Added
 
 - Bundle the Deployer 8.0.5 phar and expose it as `vendor/bin/dep` (see "Bundled Deployer" in the README).
