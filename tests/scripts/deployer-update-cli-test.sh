@@ -48,6 +48,12 @@ git tag -d v2.0.9 > /dev/null
 cp composer.json composer.json.bak
 echo '{"extra": {"deployer": {"version": "8.0.5"}}}' > composer.json
 check 'plan fails without extra.deployer.recipes-major' '! printf "v8.0.6\n" | php "$cli" plan > /dev/null 2>&1'
+echo 'null' > composer.json
+status=0; out="$(printf "v8.0.6\n" | php "$cli" plan 2>&1)" || status=$?
+check 'plan explains a composer.json that is not an object' '[ "$status" != 0 ] && grep -q "must contain a JSON object" <<<"$out"'
+echo '{"extra": {"deployer": {"version": 8.1, "recipes-major": 2}}}' > composer.json
+status=0; out="$(printf "v8.0.6\n" | php "$cli" plan 2>&1)" || status=$?
+check 'plan explains a version that is not a string' '[ "$status" != 0 ] && grep -q "must be a string" <<<"$out"'
 mv composer.json.bak composer.json
 
 check 'bundled-version prints the version' '[ "$(php "$cli" bundled-version < composer.json)" = 8.0.5 ]'

@@ -19,8 +19,8 @@ use HeimrichHannot\DeployerRecipes\Ci\DeployerUpdate;
 
 require __DIR__ . '/DeployerUpdate.php';
 
-/** @return array<string, mixed> */
-function composer(string $json): array
+/** @return mixed decoded composer.json, of any shape; throws \JsonException if it is not valid JSON */
+function composer(string $json): mixed
 {
     return \json_decode($json, true, flags: \JSON_THROW_ON_ERROR);
 }
@@ -47,6 +47,13 @@ function git(string $arguments): array
 switch ($argv[1] ?? '') {
     case 'plan':
         $composer = composer(\file_get_contents('composer.json'));
+        if (!\is_array($composer)) {
+            throw new \RuntimeException('composer.json must contain a JSON object');
+        }
+        $version = $composer['extra']['deployer']['version'] ?? throw new \RuntimeException('composer.json has no extra.deployer.version');
+        if (!\is_string($version)) {
+            throw new \RuntimeException('extra.deployer.version in composer.json must be a string, e.g. "8.0.5"');
+        }
         $recipesTags = git('tag --list');
         // The major version this branch releases, independent of the branch name
         $recipesMajor = $composer['extra']['deployer']['recipes-major'] ?? null;
@@ -55,7 +62,7 @@ switch ($argv[1] ?? '') {
         }
         $latestTag = DeployerUpdate::latestRecipesTag($recipesTags, $recipesMajor);
         $plan = DeployerUpdate::plan(
-            bundledVersion($composer) ?? throw new \RuntimeException('composer.json has no extra.deployer.version'),
+            $version,
             $recipesMajor,
             \preg_split('/\R/', \stream_get_contents(\STDIN), -1, \PREG_SPLIT_NO_EMPTY),
             $recipesTags,
@@ -76,7 +83,7 @@ switch ($argv[1] ?? '') {
 
     case 'bundled-version':
         try {
-            echo bundledVersion(\json_decode(\stream_get_contents(\STDIN), true, flags: \JSON_THROW_ON_ERROR)) ?? '';
+            echo bundledVersion(composer(\stream_get_contents(\STDIN))) ?? '';
         } catch (\JsonException $e) {
             // e.g. conflict markers on an update branch: that branch simply does not bundle a known version
             \fwrite(\STDERR, "Warning: composer.json is not valid JSON ({$e->getMessage()}).\n");
