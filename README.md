@@ -233,6 +233,24 @@ dep deploy:assets
 
 You may alternatively use its alias `dep db:clone` for `dep db:pull`.
 
+#### Accept all `db:pull` confirmations
+
+```bash
+dep db:pull -y
+# Equivalent:
+dep db:pull --yes
+```
+
+This answers yes to every pull confirmation in both `mysql` and `contao` dump modes,
+including importing the database, deleting the remote and local dump files, and
+running local migrations in `mysql` mode. It also works with `db:clone` and the
+`db:pull:mysql` / `db:pull:contao` tasks. The local migration command receives
+`--no-interaction`; its own migration and deletion policies still apply.
+
+Without `-y`, prompts and their defaults stay unchanged. Deployer's
+`--no-interaction` (`-n`) alone uses each prompt's default, so it does not accept
+cleanup questions that default to no. You can combine `-y` with `-n`.
+
 #### Exclude tables from `db:pull`
 
 By default, `dep db:pull` with `mysql` dump mode excludes volatile Contao tables such as logs, search indexes and queues from the downloaded database dump if they exist in the remote database.
