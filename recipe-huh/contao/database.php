@@ -3,6 +3,9 @@
 namespace Deployer;
 
 use Deployer\Exception\ConfigurationException;
+use Symfony\Component\Console\Input\InputOption;
+
+option('yes', 'y', InputOption::VALUE_NONE, 'Answer yes to all db:pull confirmations (including dump cleanup).');
 
 set('db_dump_mode', 'mysql');
 set('bin/mysql', 'mysql');
@@ -41,7 +44,8 @@ task('db:clone', ['db:pull']);
 
 desc('Clone database from remote with contao:backup commands.');
 task('db:pull:contao', static function () {
-    if (askConfirmation('Create a new database backup on remote?', true))
+    $yes = input()->getOption('yes');
+    if ($yes || askConfirmation('Create a new database backup on remote?', true))
     {
         // create a backup
         info('Creating database backup on remote');
@@ -76,7 +80,7 @@ task('db:pull:contao', static function () {
     download("{{current_path}}/var/backups/$filename", 'var/backups/');
     info('Database backup downloaded successfully');
 
-    if (!askConfirmation('Clone remote database to local?', true)) {
+    if (!$yes && !askConfirmation('Clone remote database to local?', true)) {
         return;
     }
     $cmdDBRestore = get('local_cmd_db_restore');
@@ -87,11 +91,11 @@ task('db:pull:contao', static function () {
     runLocally('{{local_cmd_db_restore}}', timeout: 0);
     info('Database cloned successfully');
 
-    if (askConfirmation('Delete database backup file on remote?', false)) {
+    if ($yes || askConfirmation('Delete database backup file on remote?', false)) {
         run("rm {{current_path}}/var/backups/$filename");
     }
 
-    if (askConfirmation('Delete cloned database dump file locally?', false)) {
+    if ($yes || askConfirmation('Delete cloned database dump file locally?', false)) {
         runLocally("rm var/backups/$filename");
     }
 })->once();
@@ -221,6 +225,7 @@ function mysqlQuoteString(string $value): string
 
 desc('Clone database from remote with mysqldump and mysql.');
 task('db:pull:mysql', static function () {
+    $yes = input()->getOption('yes');
     info('Fetching remote database credentials');
     runLocally('mkdir -p var/tmp');
     $absPath = run('readlink -f {{current_path}}/.env.local');
@@ -261,7 +266,7 @@ task('db:pull:mysql', static function () {
     download("{{current_path}}/var/backups/$filename", 'var/backups/');
     info('Database backup downloaded successfully');
 
-    if (!askConfirmation('Clone remote to local database?', true)) {
+    if (!$yes && !askConfirmation('Clone remote to local database?', true)) {
         return;
     }
 
@@ -269,17 +274,17 @@ task('db:pull:mysql', static function () {
     runLocally("mysql $localConn < var/backups/$filename", timeout: 0);
     info('Database cloned successfully');
 
-    if (askConfirmation('Delete database backup file on remote?', false)) {
+    if ($yes || askConfirmation('Delete database backup file on remote?', false)) {
         run("rm {{current_path}}/var/backups/$filename");
     }
 
-    if (askConfirmation('Delete cloned database dump file locally?', false)) {
+    if ($yes || askConfirmation('Delete cloned database dump file locally?', false)) {
         runLocally("rm var/backups/$filename");
     }
 
-    if (askConfirmation('Run local database migrations now?', true)) {
+    if ($yes || askConfirmation('Run local database migrations now?', true)) {
         // timeout: 0 = no timeout
-        runLocally('{{local/bin/contao-console}} contao:migrate --no-backup {{console_options}}', timeout: 0);
+        runLocally('{{local/bin/contao-console}} contao:migrate --no-backup {{console_options}}' . ($yes ? ' --no-interaction' : ''), timeout: 0);
     }
 })->once();
 
